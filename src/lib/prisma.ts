@@ -228,8 +228,8 @@ export function createSearchFilter(search: string, fields: string[]) {
   // Create OR conditions for each field that contains the search term
   const fieldConditions = fields.map(field => ({
     [field]: {
-      contains: cleanSearch,
-      mode: 'insensitive' // Make search case-insensitive
+      contains: cleanSearch
+      // Note: mode: 'insensitive' is not supported in this Prisma version
     }
   }))
 

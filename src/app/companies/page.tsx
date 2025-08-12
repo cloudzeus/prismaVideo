@@ -57,6 +57,13 @@ export default async function CompaniesPage({
   let sortField = typeof params.sortField === 'string' ? params.sortField : 'none';
   let sortDirection: 'asc' | 'desc' = typeof params.sortDirection === 'string' ? (params.sortDirection as 'asc' | 'desc') : 'asc';
   
+  // Debug logging
+  console.log('Companies page - Raw search params:', params);
+  console.log('Companies page - Parsed search:', search);
+  console.log('Companies page - Parsed type:', type);
+  console.log('Companies page - Parsed sortField:', sortField);
+  console.log('Companies page - Parsed sortDirection:', sortDirection);
+
   // Validate sort field - only allow valid database fields
   const validSortFields = ['name', 'AFM', 'type', 'address', 'city', 'country', 'EMAILACC', 'PHONE01'] as const;
   if (!validSortFields.includes(sortField as any)) {

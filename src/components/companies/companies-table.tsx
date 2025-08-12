@@ -196,7 +196,16 @@ export function CompaniesTable({ companies, isAdmin, pagination, searchParams }:
         clearTimeout(timer);
       }
     };
-  }, [searchTerm, searchParams?.search, router, toast]);
+  }, [searchTerm, router, toast]);
+
+  // Effect to sync searchTerm with URL params when they change
+  useEffect(() => {
+    const currentSearchParam = searchParams?.search || '';
+    if (searchTerm !== currentSearchParam) {
+      console.log('Syncing searchTerm with URL params:', { searchTerm, currentSearchParam });
+      setSearchTerm(currentSearchParam);
+    }
+  }, [searchParams?.search]);
 
   // Cleanup effect
   useEffect(() => {
