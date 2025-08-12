@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = "mysql://root:Prof%4015%401f1femsk@5.189.130.31:3333/videoPrisma"
+}
+
+model Company {
+  id          String           @id @default(cuid())
+  COMPANY     String           @unique
+  LOCKID      String?
+  SODTYPE     String?
+  name        String
+  type        String
+  address     String?
+  city        String?
+  country     String?
+  phone       String?
+  email       String?
+  website     String?
+  logo        String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  AFM         String?
+  CODE        String?
+  EMAILACC    String?
+  INSDATE     DateTime?
+  IRSDATA     String?
+  JOBTYPE     String?
+  PHONE01     String?
+  PHONE02     String?
+  TRDR        String?
+  UPDDATE     DateTime?
+  ZIP         String?
+  default     Boolean          @default(false)
+  calls       Call[]
+  contacts    ContactCompany[]
+  departments Department[]
+  users       User[]
+
+  @@index([name])
+  @@index([type])
+  @@index([AFM], map: "companies_afm_idx")
+  @@index([email])
+  @@index([PHONE01], map: "companies_phone01_idx")
+  @@index([city])
+  @@index([country])
+  @@map("companies")
+}
+
+model Department {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  parentId    String?
+  managerId   String?
+  companyId   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  manager     User?        @relation("DepartmentManager", fields: [managerId], references: [id])
+  parent      Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children    Department[] @relation("DepartmentHierarchy")
+  users       User[]       @relation("DepartmentUsers")
+
+  @@index([companyId], map: "departments_companyId_fkey")
+  @@index([managerId], map: "departments_managerId_fkey")
+  @@index([parentId], map: "departments_parentId_fkey")
+  @@map("departments")
+}
+
+model User {
+  id                 String        @id @default(cuid())
+  email              String        @unique
+  password           String
+  firstName          String
+  lastName           String
+  role               users_role    @default(Employee)
+  avatar             String?
+  phone              String?
+  isActive           Boolean       @default(true)
+  companyId          String
+  departmentId       String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  calls              Call[]
+  managedDepartments Department[]  @relation("DepartmentManager")
+  events             Event[]
+  participants       Participant[]
+  company            Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  department         Department?   @relation("DepartmentUsers", fields: [departmentId], references: [id])
+
+  @@index([companyId], map: "users_companyId_fkey")
+  @@index([departmentId], map: "users_departmentId_fkey")
+  @@index([firstName, lastName], map: "users_name_idx")
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+  @@map("users")
+}
+
+model Call {
+  id           String        @id @default(cuid())
+  title        String
+  description  String?
+  startTime    DateTime
+  endTime      DateTime?
+  type         String
+  status       String        @default("scheduled")
+  password     String?
+  accessToken  String?       @unique // Unique token for contact access
+  streamCallId String?
+  companyId    String
+  createdById  String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy    User          @relation(fields: [createdById], references: [id])
+  events       Event[]
+  livestreams  Livestream[]
+  participants Participant[]
+  recordings   Recording[]
+
+  @@index([createdById], map: "calls_createdById_fkey")
+  @@index([startTime])
+  @@index([status])
+  @@index([type])
+  @@index([companyId, startTime], map: "calls_company_startTime_idx")
+  @@map("calls")
+}
+
+model Participant {
+  id        String    @id @default(cuid())
+  callId    String
+  userId    String?
+  contactId String?
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+  role      String    @default("participant")
+  isMuted   Boolean   @default(false)
+  isVideoOn Boolean   @default(true)
+  call      Call      @relation(fields: [callId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id])
+  contact   Contact?  @relation(fields: [contactId], references: [id])
+
+  @@unique([callId, userId])
+  @@unique([callId, contactId])
+  @@index([userId], map: "participants_userId_fkey")
+  @@index([contactId], map: "participants_contactId_fkey")
+  @@map("participants")
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  callId    String
+  userId    String
+  type      String
+  timestamp DateTime @default(now())
+  metadata  Json?
+  call      Call     @relation(fields: [callId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([callId], map: "events_callId_fkey")
+  @@index([userId], map: "events_userId_fkey")
+  @@map("events")
+}
+
+model Recording {
+  id                String   @id @default(cuid())
+  callId            String
+  streamRecordingId String?
+  title             String
+  description       String?
+  url               String?
+  duration          Int?
+  fileSize          Int?
+  status            String   @default("processing")
+  bunnyCdnUrl       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  call              Call     @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@index([callId], map: "recordings_callId_fkey")
+  @@map("recordings")
+}
+
+model Livestream {
+  id                 String   @id @default(cuid())
+  callId             String
+  streamLivestreamId String?
+  title              String
+  description        String?
+  url                String?
+  status             String   @default("scheduled")
+  bunnyCdnUrl        String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  call               Call     @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@index([callId], map: "livestreams_callId_fkey")
+  @@map("livestreams")
+}
+
+model Contact {
+  id         String           @id @default(cuid())
+  firstName  String
+  lastName   String
+  title      String?
+  profession String?
+  email      String?
+  phone      String?
+  mobile     String?
+  workPhone  String?
+  address    String?
+  city       String?
+  zip        String?
+  country    String?
+  avatarUrl  String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  companies  ContactCompany[]
+  participants Participant[]
+
+  @@map("contacts")
+}
+
+model ContactCompany {
+  id        String   @id @default(cuid())
+  contactId String
+  companyId String
+  createdAt DateTime @default(now())
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, companyId])
+  @@index([contactId])
+  @@index([companyId])
+  @@map("contact_companies")
+}
+
+enum users_role {
+  Administrator
+  Manager
+  Employee
+  Contact
+}

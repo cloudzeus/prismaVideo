@@ -1,0 +1,54 @@
+# === Project-wide Engineering Directives (Cursor AI) ===
+# This repository follows the rules below. When generating or editing code,
+# ALWAYS comply unless the user explicitly overrides in the same request.
+
+## Architectural defaults
+- ALWAYS use **Next.js server components** for all data fetching and heavy logic.
+- ALWAYS implement SSR (Server-Side Rendering) as the default. Prefer server
+  actions, route handlers, and RSC data access over client-side fetch.
+- ALWAYS prefer **tag-based caching + revalidation** (e.g., `revalidateTag`,
+  `revalidatePath`) so pages auto-refresh when underlying data changes.
+- NEVER introduce breaking changes that could affect other parts of the app.
+  If a refactor might be cross-cutting, propose it first with migration notes.
+
+## Data sources & encoding
+- When fetching from **SoftOne**, ALWAYS:
+  1) Fetch as `arrayBuffer()`
+  2) Decode using **iconv-lite** from **ANSI 1253 / windows-1253** to UTF-8
+  3) Then parse the resulting string (JSON/XML as appropriate)
+- Include `iconv-lite` import and decoding steps in any SoftOne examples.
+
+## UI & components
+- ALWAYS use **shadcn/ui** components for ALL UI (forms, dialogs, tables, etc.).
+- Use Tailwind for utility styles. Keep a consistent, minimal, modern aesthetic.
+- Do not introduce alternative UI libraries unless explicitly requested.
+
+## AuthN/AuthZ
+- ALWAYS use **Auth.js v5** (next-auth v5) for authentication & authorization.
+- Use server helpers (e.g., `auth()` in server components/actions) for access control.
+- Protect server actions and route handlers via Auth.js session/role checks.
+
+## Database
+- ORM: **Prisma** (MySQL).
+- Schema changes: ALWAYS use **`prisma db push`**. **NEVER** use migrations in this project.
+- Complex queries: prefer **MySQL-native directives** via **`prisma.$queryRaw`** /
+  **`$executeRaw`** with parameterization. Use raw SQL when Prisma query builder
+  can’t express the needed plan efficiently.
+
+## Caching & revalidation
+- Use SSR by default. When caching, attach **tags** and revalidate via
+  `revalidateTag()` after writes/updates. For page-level refresh, use `revalidatePath()`.
+- Avoid stale data: if the underlying data changes, trigger revalidation in
+  the relevant write paths. Prefer **short revalidate windows** or **no-store**
+  for highly dynamic views.
+- DO NOT rely on client polling for freshness unless explicitly required.
+
+## Safety & compatibility
+- Do not alter public types, route schemas, or shared utilities in ways that
+  might break other modules without a compatibility layer.
+- Maintain backward compatibility for API responses unless a breaking change
+  is approved and versioned.
+
+## Code patterns (copy-ready)
+### SoftOne fetch with iconv-lite (ANSI 1253 → UTF-8)
+```ts

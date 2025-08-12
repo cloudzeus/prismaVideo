@@ -1,0 +1,8 @@
+# Database connection for the import script
+DATABASE_URL="mysql://username:password@localhost:3306/database_name"
+
+# Example for local development:
+# DATABASE_URL="mysql://root:password@localhost:3306/video_prisma"
+
+# Example for production:
+# DATABASE_URL="mysql://user:pass@host:3306/db_name" 
