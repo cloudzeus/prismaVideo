@@ -62,7 +62,8 @@ export function EnhancedMultiSelect({
   const availableOptions = options.filter((option) => !selected.includes(option.value))
 
   // Use search results if available, otherwise use available options
-  const displayOptions = hasSearched ? searchResults : availableOptions
+  // If no search function is provided, always show available options
+  const displayOptions = onSearch && hasSearched ? searchResults : availableOptions
 
   const handleUnselect = (item: string) => {
     onChange(selected.filter((i) => i !== item))
@@ -116,6 +117,12 @@ export function EnhancedMultiSelect({
       // Don't close dropdown when clearing - show all available options
       setOpen(true)
     }
+    
+    // If no search function is provided, always show available options
+    if (!onSearch) {
+      setHasSearched(false)
+      setOpen(true)
+    }
   }, [handleSearch, minSearchLength, onSearch])
 
   const handleKeyDown = React.useCallback(
@@ -163,7 +170,10 @@ export function EnhancedMultiSelect({
       <div className="group border border-input px-3 py-2 text-sm ring-offset-background rounded-md focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
         {/* Debug indicator */}
         <div className="text-xs text-blue-500 mb-1">
-          🔍 Search Component Active (onSearch: {onSearch ? 'YES' : 'NO'})
+          🔍 Search Component Active (onSearch: {onSearch ? 'YES' : 'NO'}) | 
+          Options: {options.length} | 
+          Available: {availableOptions.length} | 
+          Display: {displayOptions.length}
         </div>
         
         <div className="flex gap-1 flex-wrap">
@@ -209,6 +219,14 @@ export function EnhancedMultiSelect({
                 console.log('Input onChange event:', value)
                 handleInputChange(value)
               }}
+              onClick={() => {
+                console.log('Input clicked, opening dropdown')
+                setOpen(true)
+                // If no search function is provided, always show available options
+                if (!onSearch) {
+                  setHasSearched(false)
+                }
+              }}
               onBlur={() => {
                 // Delay closing to allow for click events
                 setTimeout(() => setOpen(false), 200)
@@ -219,6 +237,10 @@ export function EnhancedMultiSelect({
                 // Show all available options when focused (if no search is active)
                 if (!hasSearched) {
                   setSearchResults([])
+                  setHasSearched(false)
+                }
+                // If no search function is provided, always show available options
+                if (!onSearch) {
                   setHasSearched(false)
                 }
               }}

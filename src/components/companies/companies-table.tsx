@@ -28,7 +28,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 import { CompanyForm } from '@/components/forms/company-form';
+import { CreateContactModal } from '@/components/contacts/create-contact-modal';
 import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 import { 
   Edit, 
@@ -107,6 +109,7 @@ export function CompaniesTable({ companies, isAdmin, pagination, searchParams }:
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false)
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null)
   const [searchTerm, setSearchTerm] = useState(searchParams?.search || '')
   const [selectedType, setSelectedType] = useState<string>(searchParams?.type || 'all')
@@ -403,15 +406,16 @@ export function CompaniesTable({ companies, isAdmin, pagination, searchParams }:
     setIsDeleteModalOpen(true)
   }
 
-  const handleViewContacts = (company: Company) => {
+  const handleAddContact = (company: Company) => {
     try {
-      // Navigate to contacts page with company filter
-      router.push(`/contacts?company=${company.id}`)
+      // Set the selected company and open the contact creation modal
+      setSelectedCompany(company)
+      setIsContactModalOpen(true)
     } catch (error) {
-      console.error('Error navigating to contacts:', error)
+      console.error('Error opening contact modal:', error)
       toast({
-        title: "Navigation Error",
-        description: "Failed to navigate to contacts page",
+        title: "Error",
+        description: "Failed to open contact creation modal",
         variant: "destructive",
       })
     }
@@ -882,14 +886,23 @@ export function CompaniesTable({ companies, isAdmin, pagination, searchParams }:
                           {isAdmin && (
                             <TableCell>
                               <div className="flex items-center space-x-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleViewContacts(company)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <UserPlus className="h-4 w-4" />
-                                </Button>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleAddContact(company)}
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        <UserPlus className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Add Contact</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -1022,6 +1035,15 @@ export function CompaniesTable({ companies, isAdmin, pagination, searchParams }:
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+        )}
+
+        {/* Contact Creation Modal */}
+        {isContactModalOpen && selectedCompany && (
+          <CreateContactModal
+            open={isContactModalOpen}
+            onOpenChange={setIsContactModalOpen}
+            company={selectedCompany}
+          />
         )}
       </div>
     );

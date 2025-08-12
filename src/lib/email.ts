@@ -1,48 +1,27 @@
 import nodemailer from 'nodemailer'
 import { format } from 'date-fns'
 
-// Get SMTP settings from environment or database
+// Get SMTP settings from environment variables
 async function getSmtpConfig() {
-  try {
-    // Try to get from database first
-    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/settings/smtp`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-    
-    if (response.ok) {
-      const settings = await response.json()
-      if (settings.enabled) {
-        return {
-          host: settings.host,
-          port: settings.port,
-          secure: settings.encryption === 'ssl',
-          auth: settings.requireAuth ? {
-            user: settings.username,
-            pass: settings.password,
-          } : undefined,
-          fromEmail: settings.fromEmail,
-          fromName: settings.fromName,
-        }
-      }
-    }
-  } catch (error) {
-    console.warn('Failed to get SMTP settings from database, using environment variables:', error)
+  const host = process.env.SMTP_HOST
+  const port = process.env.SMTP_PORT
+  const user = process.env.SMTP_USER
+  const pass = process.env.SMTP_PASS
+  const fromEmail = process.env.SMTP_FROM
+  const fromName = process.env.SMTP_FROM_NAME
+
+  // Validate required environment variables
+  if (!host || !port || !user || !pass || !fromEmail) {
+    throw new Error('Missing required SMTP environment variables: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM')
   }
 
-  // Fallback to environment variables
   return {
-    host: process.env.SMTP_HOST || 'localhost',
-    port: parseInt(process.env.SMTP_PORT || '587'),
+    host,
+    port: parseInt(port),
     secure: process.env.SMTP_SECURE === 'true',
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    fromEmail: process.env.SMTP_FROM || 'noreply@video-conference.com',
-    fromName: process.env.SMTP_FROM_NAME || 'Video Conference Manager',
+    auth: { user, pass },
+    fromEmail,
+    fromName: fromName || 'Video Conference Manager',
   }
 }
 
@@ -50,12 +29,28 @@ async function getSmtpConfig() {
 async function createTransporter() {
   const config = await getSmtpConfig()
   
-  return nodemailer.createTransport({
+  const transporter = nodemailer.createTransport({
     host: config.host,
     port: config.port,
     secure: config.secure,
     auth: config.auth,
+    tls: {
+      rejectUnauthorized: false, // For testing purposes
+    },
+    connectionTimeout: 30000, // 30 seconds
+    greetingTimeout: 30000,
   })
+
+  // Verify connection configuration
+  try {
+    await transporter.verify()
+    console.log('SMTP connection verified successfully')
+  } catch (error) {
+    console.error('SMTP connection verification failed:', error)
+    throw new Error(`SMTP connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+  }
+
+  return transporter
 }
 
 const FROM_EMAIL = process.env.SMTP_FROM || 'noreply@video-conference.com'

@@ -48,7 +48,7 @@ export default async function ContactsPage() {
     <div className="min-h-screen bg-background">
       <Navigation user={user} />
       
-      <main className="container-responsive py-6">
+      <main className="container-responsive py-6 pt-24">
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">

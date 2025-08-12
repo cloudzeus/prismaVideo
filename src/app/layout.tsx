@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/providers/theme-provider';
 import { AuthProvider } from '@/providers/auth-provider';
-import { StreamProvider } from '@/providers/stream-provider';
+
 import { Toaster } from '@/components/ui/toaster';
 import { PerformanceMonitor } from '@/components/ui/performance-monitor';
 
@@ -11,8 +11,8 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Video Conference Manager',
-  description: 'Modern video conference management platform with Stream.io integration',
-  keywords: ['video conference', 'meeting', 'stream.io', 'prisma', 'next.js'],
+  description: 'Modern video conference management platform with WebRTC',
+  keywords: ['video conference', 'meeting', 'webrtc', 'prisma', 'next.js'],
   authors: [{ name: 'Video Conference Manager' }],
   creator: 'Video Conference Manager',
   openGraph: {
@@ -49,18 +49,16 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <AuthProvider>
-          <StreamProvider>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-            >
-              {children}
-              <Toaster />
-              <PerformanceMonitor />
-            </ThemeProvider>
-          </StreamProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+            <Toaster />
+            <PerformanceMonitor />
+          </ThemeProvider>
         </AuthProvider>
       </body>
     </html>

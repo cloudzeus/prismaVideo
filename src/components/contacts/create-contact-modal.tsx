@@ -50,11 +50,16 @@ type ContactFormData = z.infer<typeof contactSchema>
 interface CreateContactModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  company?: {
+    id: string
+    name: string
+  }
 }
 
 export function CreateContactModal({ 
   open, 
-  onOpenChange
+  onOpenChange,
+  company
 }: CreateContactModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
@@ -76,7 +81,7 @@ export function CreateContactModal({
       zip: '',
       country: '',
       avatarUrl: '',
-      companyIds: [],
+      companyIds: company ? [company.id] : [],
     },
   })
 

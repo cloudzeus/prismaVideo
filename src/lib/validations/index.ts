@@ -48,11 +48,17 @@ export const userUpdateSchema = userFormBaseSchema.extend({
 export const meetingFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters").max(200, "Title must be less than 200 characters"),
   description: z.string().max(1000, "Description must be less than 1000 characters").optional(),
-  startTime: z.date({
-    required_error: "Start time is required",
+  startTime: z.union([
+    z.date(),
+    z.string().transform((val) => new Date(val))
+  ]).refine((date) => date instanceof Date && !isNaN(date.getTime()), {
+    message: "Invalid start time"
   }),
-  endTime: z.date({
-    required_error: "End time is required",
+  endTime: z.union([
+    z.date(),
+    z.string().transform((val) => new Date(val))
+  ]).refine((date) => date instanceof Date && !isNaN(date.getTime()), {
+    message: "Invalid end time"
   }),
   type: z.enum(["VIDEO_CALL", "AUDIO_CALL", "SCREEN_SHARE", "PRESENTATION"]),
   status: z.enum(["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]).default("SCHEDULED"),

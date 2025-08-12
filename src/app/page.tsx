@@ -25,7 +25,7 @@ export default async function DashboardPage() {
     const [recentMeetings, upcomingMeetings, meetingStats, companyStats, userStats] = await Promise.all([
       getRecentMeetings(user.id, user.companyId, isAdmin),
       getUpcomingMeetings(user.id, user.companyId, isAdmin),
-      getQuickStats(user.companyId, isAdmin),
+      getQuickStats(user.companyId, isAdmin, user.id),
       isAdmin ? getCompanyStats() : null,
       isAdmin ? getUserStats() : null,
     ]);

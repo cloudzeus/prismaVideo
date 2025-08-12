@@ -33,6 +33,14 @@ export async function getRecentMeetings(userId: string, companyId: string, isAdm
               lastName: true,
               email: true,
             }
+          },
+          contact: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            }
           }
         }
       }
@@ -76,6 +84,14 @@ export async function getUpcomingMeetings(userId: string, companyId: string, isA
               lastName: true,
               email: true,
             }
+          },
+          contact: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            }
           }
         }
       }
@@ -94,16 +110,17 @@ export async function getMeetingsByCompany(
     search?: string
     status?: string
     type?: string
+    userId?: string
   } = {}
 ) {
-  const { page = 1, limit = 10, search, status, type } = options
+  const { page = 1, limit = 10, search, status, type, userId } = options
   
   const where: any = { companyId }
   
-  if (!isAdmin) {
+  if (!isAdmin && userId) {
     where.OR = [
-      { createdById: 'temp-user-id' }, // Will be replaced with actual user ID
-      { participants: { some: { userId: 'temp-user-id' } } },
+      { createdById: userId },
+      { participants: { some: { userId } } },
     ]
   }
 
@@ -135,6 +152,14 @@ export async function getMeetingsByCompany(
         participants: {
           include: {
             user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+              }
+            },
+            contact: {
               select: {
                 id: true,
                 firstName: true,
@@ -210,6 +235,15 @@ export async function getMeetingById(id: string, userId: string, isAdmin: boolea
               avatar: true,
               role: true,
             }
+          },
+          contact: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              avatarUrl: true,
+            }
           }
         }
       },
@@ -223,13 +257,15 @@ export async function getMeetingById(id: string, userId: string, isAdmin: boolea
   })
 }
 
-export async function getQuickStats(companyId: string, isAdmin: boolean) {
+export async function getQuickStats(companyId: string, isAdmin: boolean, userId?: string) {
   const where: any = { companyId }
   
-  if (!isAdmin) {
+  if (!isAdmin && userId) {
     // For non-admin users, we'll need to filter by their participation
-    // This is a simplified version - in practice, you'd need to join with participants
-    where.createdById = 'temp-user-id' // Will be replaced with actual user ID
+    where.OR = [
+      { createdById: userId },
+      { participants: { some: { userId } } },
+    ]
   }
 
   const now = new Date()
@@ -375,6 +411,15 @@ export async function getMeetingsByUser(
                 lastName: true,
                 email: true,
                 avatar: true,
+              }
+            },
+            contact: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                avatarUrl: true,
               }
             }
           }

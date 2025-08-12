@@ -17,6 +17,39 @@ export async function createMeeting(formData: FormData) {
     const rawData = Object.fromEntries(formData.entries())
     const validatedData = meetingFormSchema.parse(rawData)
 
+    // Separate user and contact participants
+    const userParticipants = []
+    const contactParticipants = []
+
+    // Check if each participant is a user or contact
+    for (const participantId of validatedData.participants) {
+      // Check if it's a user
+      const user = await prisma.user.findUnique({
+        where: { id: participantId },
+        select: { id: true }
+      })
+      
+      if (user) {
+        userParticipants.push({
+          userId: participantId,
+          role: 'Participant'
+        })
+      } else {
+        // Check if it's a contact
+        const contact = await prisma.contact.findUnique({
+          where: { id: participantId },
+          select: { id: true }
+        })
+        
+        if (contact) {
+          contactParticipants.push({
+            contactId: participantId,
+            role: 'Participant'
+          })
+        }
+      }
+    }
+
     // Create meeting
     const meeting = await prisma.call.create({
       data: {
@@ -28,17 +61,15 @@ export async function createMeeting(formData: FormData) {
         companyId: session.user.companyId,
         createdBy: session.user.id,
         participants: {
-          create: validatedData.participantIds.map((participantId: string) => ({
-            userId: participantId,
-            role: 'Participant'
-          }))
+          create: [...userParticipants, ...contactParticipants]
         }
       },
       include: {
         company: true,
         participants: {
           include: {
-            user: true
+            user: true,
+            contact: true
           }
         }
       }

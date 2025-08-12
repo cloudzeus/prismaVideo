@@ -35,114 +35,114 @@ interface Contact {
 
 interface CreateMeetingButtonProps {
   user: User;
+  users: User[];
+  contacts: Contact[];
 }
 
-export const CreateMeetingButton = ({ user }: CreateMeetingButtonProps) => {
+export const CreateMeetingButton = ({ user, users, contacts }: CreateMeetingButtonProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [participants, setParticipants] = useState<Array<{ id: string; name: string; email: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Fetch participants (users and contacts) when the modal opens
+  // Set participants when the modal opens
   useEffect(() => {
     if (isOpen) {
-      fetchParticipants();
+      console.log('🎯 Modal opened, setting participants from props...');
+      setParticipantsFromProps();
     }
-  }, [isOpen]);
+  }, [isOpen, users, contacts]);
 
-  const fetchParticipants = async () => {
+  const setParticipantsFromProps = () => {
     try {
-      setIsLoading(true);
-      console.log('Fetching participants for company:', user.companyId);
-      console.log('Current user role:', user.role);
+      console.log('🎯 Setting participants from props...');
+      console.log('🎯 Users from props:', users);
+      console.log('🎯 Contacts from props:', contacts);
       
-      // Check if user has required permissions
-      if (!user.companyId) {
-        throw new Error('User does not have a company ID');
-      }
-
-      // Fetch users from the company
-      const usersResponse = await fetch(`/api/users/all?companyId=${user.companyId}`);
-      console.log('Users response status:', usersResponse.status);
-      
-      if (!usersResponse.ok) {
-        const errorText = await usersResponse.text();
-        console.error('Users API error:', errorText);
-        throw new Error(`Failed to fetch users: ${usersResponse.status} - ${errorText}`);
-      }
-      
-      const usersData = await usersResponse.json();
-      console.log('Users data:', usersData);
-      
-      // Fetch contacts from the company
-      const contactsResponse = await fetch(`/api/contacts?companyId=${user.companyId}`);
-      console.log('Contacts response status:', contactsResponse.status);
-      
-      if (!contactsResponse.ok) {
-        const errorText = await contactsResponse.text();
-        console.error('Contacts API error:', errorText);
-        throw new Error(`Failed to fetch contacts: ${contactsResponse.status} - ${errorText}`);
-      }
-      
-      const contactsData = await contactsResponse.json();
-      console.log('Contacts data:', contactsData);
-      
-      // Filter contacts by company ID since the API doesn't filter by company
-      const companyContacts = contactsData.filter((contact: any) =>
-        contact.companies && contact.companies.some((company: any) => company.companyId === user.companyId),
-      );
-      
-      console.log('Filtered company contacts:', companyContacts);
-      
-      // Combine and format participants
+      // Combine and format participants from props
       const allParticipants = [
-        ...usersData.map((user: User) => ({
+        ...users.map((user: User) => ({
           id: user.id,
-          name: `${user.firstName} ${user.lastName}`,
+          name: `${user.firstName} ${user.lastName}`.trim(),
           email: user.email,
         })),
-        ...companyContacts.map((contact: Contact) => ({
+        ...contacts.map((contact: Contact) => ({
           id: contact.id,
-          name: `${contact.firstName} ${contact.lastName}`,
+          name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email || 'Unknown Contact',
           email: contact.email,
         })),
       ];
       
-      console.log('All participants:', allParticipants);
+      console.log('🎯 All participants from props:', allParticipants);
+      console.log('🎯 Setting participants state with:', allParticipants.length, 'participants');
+      console.log('🎯 Users count:', users.length);
+      console.log('🎯 Contacts count:', contacts.length);
+      console.log('🎯 Final participant names:', allParticipants.map(p => ({ id: p.id, name: p.name, email: p.email })));
       setParticipants(allParticipants);
       
       if (allParticipants.length === 0) {
+        console.log('🎯 No participants found, showing error toast');
         toast({
           title: 'No Participants Found',
           description: 'No users or contacts found for your company. Please check your company settings.',
-          variant: 'destructive',
         });
       } else {
+        console.log('🎯 Participants loaded successfully from props');
         toast({
           title: 'Participants Loaded',
           description: `Successfully loaded ${allParticipants.length} participants`,
         });
       }
     } catch (error) {
-      console.error('Failed to fetch participants:', error);
+      console.error('Failed to set participants from props:', error);
       toast({
         title: 'Error Loading Participants',
         description: error instanceof Error ? error.message : 'Failed to load participants',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const handleMeetingCreated = async (meetingData: any) => {
-    setIsOpen(false);
+    try {
+      setIsLoading(true);
+      
+      // Create the meeting via API
+      const response = await fetch('/api/meetings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(meetingData),
+      });
 
-    // Email invitations will be sent server-side when the meeting is created
-    console.log('Meeting created:', meetingData);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create meeting');
+      }
 
-    // Optionally refresh the page or update the meetings list
-    window.location.reload();
+      const result = await response.json();
+      console.log('Meeting created:', result);
+
+      toast({
+        title: 'Success',
+        description: 'Meeting created successfully!',
+      });
+
+      setIsOpen(false);
+      
+      // Refresh the page to show the new meeting
+      window.location.reload();
+    } catch (error) {
+      console.error('Error creating meeting:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create meeting',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -151,14 +151,14 @@ export const CreateMeetingButton = ({ user }: CreateMeetingButtonProps) => {
         <Button className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
           <Video className="h-4 w-4" />
-          Create Meeting
+          Create Video Conference
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Video className="h-5 w-5" />
-            Create New Meeting
+            Create New Video Conference
           </DialogTitle>
           <DialogDescription>
             Schedule a new video meeting with your team or external participants.
@@ -170,6 +170,18 @@ export const CreateMeetingButton = ({ user }: CreateMeetingButtonProps) => {
           onSubmit={handleMeetingCreated}
           isLoading={isLoading}
         />
+        {/* Debug info */}
+        <div className="mt-4 p-4 bg-gray-100 rounded-lg text-xs">
+          <p><strong>Debug Info:</strong></p>
+          <p>Participants count: {participants.length}</p>
+          <p>Users count: {users?.length || 0}</p>
+          <p>Contacts count: {contacts?.length || 0}</p>
+          <p>Is loading: {isLoading ? 'Yes' : 'No'}</p>
+          <p>User company ID: {user.companyId}</p>
+          <p>User role: {user.role}</p>
+          <p><strong>Users:</strong> {users?.map(u => `${u.firstName} ${u.lastName}`).join(', ') || 'None'}</p>
+          <p><strong>Contacts:</strong> {contacts?.map(c => `${c.firstName} ${c.lastName}`).join(', ') || 'None'}</p>
+        </div>
       </DialogContent>
     </Dialog>
   );

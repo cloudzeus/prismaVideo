@@ -100,7 +100,14 @@ export function MeetingForm({ initialData, participants, onSubmit, isLoading = f
         return
       }
 
-      await onSubmit(data)
+      // Ensure dates are properly formatted as ISO strings for API transmission
+      const formattedData = {
+        ...data,
+        startTime: data.startTime.toISOString(),
+        endTime: data.endTime.toISOString(),
+      }
+
+      await onSubmit(formattedData)
       toast({
         title: "Success",
         description: "Meeting saved successfully.",
@@ -122,16 +129,19 @@ export function MeetingForm({ initialData, participants, onSubmit, isLoading = f
   console.log('🎯 MeetingForm participantOptions:', participantOptions);
   console.log('🎯 MeetingForm participants prop:', participants);
   console.log('🎯 MeetingForm form participants value:', form.watch("participants"));
+  console.log('🎯 MeetingForm participantOptions length:', participantOptions.length);
+  console.log('🎯 MeetingForm participants prop length:', participants?.length || 0);
+  console.log('🎯 MeetingForm participantOptions details:', participantOptions.map(p => ({ label: p.label, value: p.value })));
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Video className="h-5 w-5" />
-          {initialData ? "Edit Meeting" : "Schedule New Meeting"}
+          {initialData ? "Edit Video Conference" : "Schedule New Video Conference"}
         </CardTitle>
         <CardDescription>
-          {initialData ? "Update meeting details and settings" : "Create a new meeting with participants"}
+          {initialData ? "Update conference details and settings" : "Create a new video conference with participants"}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -141,7 +151,7 @@ export function MeetingForm({ initialData, participants, onSubmit, isLoading = f
             <div className="space-y-4">
               <h3 className="text-lg font-medium flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                Meeting Details
+                Conference Details
               </h3>
               
               <FormField
@@ -409,7 +419,7 @@ export function MeetingForm({ initialData, participants, onSubmit, isLoading = f
             <div className="space-y-4">
               <h3 className="text-lg font-medium flex items-center gap-2">
                 <Video className="h-4 w-4" />
-                Meeting Type & Settings
+                Video Conference Settings
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -418,22 +428,25 @@ export function MeetingForm({ initialData, participants, onSubmit, isLoading = f
                   name="type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Meeting Type</FormLabel>
+                      <FormLabel>Conference Type</FormLabel>
                       <FormControl>
                         <Combobox
                           options={[
-                            { value: "VIDEO_CALL", label: "Video Call" },
-                            { value: "AUDIO_CALL", label: "Audio Call" },
-                            { value: "SCREEN_SHARE", label: "Screen Share" },
-                            { value: "PRESENTATION", label: "Presentation" }
+                            { value: "VIDEO_CALL", label: "Video Conference" },
+                            { value: "AUDIO_CALL", label: "Audio Only" },
+                            { value: "SCREEN_SHARE", label: "Screen Sharing" },
+                            { value: "PRESENTATION", label: "Presentation Mode" }
                           ]}
                           value={field.value}
                           onValueChange={field.onChange}
-                          placeholder="Select meeting type"
-                          searchPlaceholder="Search meeting types..."
-                          emptyMessage="No meeting types found"
+                          placeholder="Select conference type"
+                          searchPlaceholder="Search conference types..."
+                          emptyMessage="No conference types found"
                         />
                       </FormControl>
+                      <FormDescription>
+                        All meetings include video conference capabilities with WebRTC
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -441,18 +454,46 @@ export function MeetingForm({ initialData, participants, onSubmit, isLoading = f
 
                 <FormField
                   control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Meeting Status</FormLabel>
+                      <FormControl>
+                        <Combobox
+                          options={[
+                            { value: "SCHEDULED", label: "Scheduled" },
+                            { value: "IN_PROGRESS", label: "In Progress" },
+                            { value: "COMPLETED", label: "Completed" },
+                            { value: "CANCELLED", label: "Cancelled" }
+                          ]}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Select meeting status"
+                          searchPlaceholder="Search meeting statuses..."
+                          emptyMessage="No meeting statuses found"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
                   name="location"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
-                        Location
+                        Conference Location
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="Conference Room A or Zoom Link" {...field} />
+                        <Input placeholder="Virtual (WebRTC) or Physical Location" {...field} />
                       </FormControl>
                       <FormDescription>
-                        Physical location or virtual meeting link
+                        Virtual conference (WebRTC) or physical meeting room
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -532,7 +573,7 @@ export function MeetingForm({ initialData, participants, onSubmit, isLoading = f
             <div className="space-y-4">
               <h3 className="text-lg font-medium flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Participants
+                Conference Participants
               </h3>
               
               <FormField
@@ -552,7 +593,7 @@ export function MeetingForm({ initialData, participants, onSubmit, isLoading = f
                       />
                     </FormControl>
                     <FormDescription>
-                      Choose who should be invited to this meeting. Users are shown first, followed by contacts.
+                      Choose who should be invited to this video conference. Users are shown first, followed by contacts.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

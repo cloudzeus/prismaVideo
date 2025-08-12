@@ -115,11 +115,11 @@ export function CompanySettings() {
   const handleSetDefaultCompany = async () => {
     if (!selectedCompany) return
 
-    // If changing from current default, show confirmation dialog
-    if (currentDefault && selectedCompany !== currentDefault.id) {
-      setShowConfirmDialog(true)
-      return
-    }
+      // If changing from current default, show confirmation dialog
+  if (defaultCompany && selectedCompany !== defaultCompany.id) {
+    setShowConfirmDialog(true)
+    return
+  }
 
     // If setting initial default or same company, proceed directly
     await updateDefaultCompany()
@@ -208,14 +208,14 @@ export function CompanySettings() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {currentDefault ? (
+          {defaultCompany ? (
             <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
               <div className="flex items-center space-x-3">
                 <CheckCircle className="h-5 w-5 text-green-600" />
                 <div>
-                  <div className="font-medium">{currentDefault.name}</div>
+                  <div className="font-medium">{defaultCompany.name}</div>
                   <div className="text-sm text-muted-foreground">
-                    {currentDefault.type} • {currentDefault.city}, {currentDefault.country}
+                    {defaultCompany.type} • {defaultCompany.city}, {defaultCompany.country}
                   </div>
                 </div>
               </div>
@@ -356,10 +356,10 @@ export function CompanySettings() {
                 onClick={handleSetDefaultCompany}
                 disabled={isUpdating}
                 className="w-full"
-                variant={selectedCompany && currentDefault && selectedCompany !== currentDefault.id ? "destructive" : "default"}
+                variant={selectedCompany && defaultCompany && selectedCompany !== defaultCompany.id ? "destructive" : "default"}
               >
                 {isUpdating ? 'Updating...' : (
-                  selectedCompany && currentDefault && selectedCompany !== currentDefault.id 
+                  selectedCompany && defaultCompany && selectedCompany !== defaultCompany.id 
                     ? 'Change Default Company (Move All Data)' 
                     : 'Set as Default Company'
                 )}
@@ -375,7 +375,7 @@ export function CompanySettings() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Company Change</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to change the default company from <strong>{currentDefault?.name}</strong> to <strong>{companies.find(c => c.id === selectedCompany)?.name}</strong>.
+              You are about to change the default company from <strong>{defaultCompany?.name}</strong> to <strong>{companies.find(c => c.id === selectedCompany)?.name}</strong>.
               <br /><br />
               This will move ALL data to the new company:
               <ul className="mt-2 space-y-1 list-disc list-inside">

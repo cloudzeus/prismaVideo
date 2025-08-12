@@ -1,10 +1,13 @@
 import { redirect } from 'next/navigation';
+
+import { Navigation } from '@/components/layout/navigation';
+import { CreateMeetingButton } from '@/components/meetings/create-meeting-button';
+import { MeetingsTable } from '@/components/meetings/meetings-table';
+
 import { getAuthSession } from '@/lib/auth';
 import { getMeetingsByCompany } from '@/lib/data/meetings';
 import { getUsersByCompany } from '@/lib/data/users';
-import { Navigation } from '@/components/layout/navigation';
-import { MeetingsTable } from '@/components/meetings/meetings-table';
-import { CreateMeetingButton } from '@/components/meetings/create-meeting-button';
+import { getContactsByCompany } from '@/lib/data/contacts';
 
 export default async function MeetingsPage({
   searchParams,
@@ -28,6 +31,8 @@ export default async function MeetingsPage({
   const status = typeof params.status === 'string' ? params.status : '';
   const type = typeof params.type === 'string' ? params.type : '';
 
+
+
   // Fetch meetings server-side
   const meetings = await getMeetingsByCompany(
     user.companyId,
@@ -38,6 +43,7 @@ export default async function MeetingsPage({
       search,
       status,
       type,
+      userId: user.id,
     }
   );
 
@@ -58,11 +64,11 @@ export default async function MeetingsPage({
         email: participant.user.email,
         avatar: null,
       } : undefined,
-      contact: participant.contactId ? {
-        id: participant.contactId,
-        firstName: '',
-        lastName: '',
-        email: '',
+      contact: participant.contact ? {
+        id: participant.contact.id,
+        firstName: participant.contact.firstName,
+        lastName: participant.contact.lastName,
+        email: participant.contact.email,
         avatarUrl: null,
       } : undefined,
     }))
@@ -77,6 +83,14 @@ export default async function MeetingsPage({
     }
   );
 
+  // Fetch contacts for the meeting modal
+  const contacts = await getContactsByCompany(user.companyId);
+  
+  // Debug logging
+  console.log('🔍 Debug: Fetched contacts:', contacts);
+  console.log('🔍 Debug: User company ID:', user.companyId);
+  console.log('🔍 Debug: Contacts count:', contacts.length);
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation user={user} />
@@ -86,26 +100,26 @@ export default async function MeetingsPage({
           {/* Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Meetings</h1>
+              <h1 className="text-3xl font-bold tracking-tight">Video Conferences</h1>
               <p className="text-muted-foreground">
-                Manage and join your video conferences
+                Manage and join your video conferences powered by WebRTC
               </p>
             </div>
-            <CreateMeetingButton user={user} />
+            <CreateMeetingButton user={user} users={users.data} contacts={contacts} />
           </div>
 
           {/* Meetings Table */}
           <div className="bg-card rounded-lg border">
-            <MeetingsTable 
-              meetings={transformedMeetings}
-              pagination={meetings.pagination}
+            <MeetingsTable
               currentFilters={{
-                page,
                 limit,
+                page,
                 search,
                 status,
                 type,
               }}
+              meetings={transformedMeetings}
+              pagination={meetings.pagination}
               user={user}
               users={users.data}
             />

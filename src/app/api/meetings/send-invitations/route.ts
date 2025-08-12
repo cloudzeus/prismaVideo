@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { simpleEmailService } from '@/lib/simple-email'
+import { sendEmail, generateMeetingInvitationEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,34 +30,42 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Send meeting invitation emails
-    const emailSent = await simpleEmailService.sendMeetingInvitation({
+    // Compose and send meeting invitations using real SMTP
+    const meeting = {
       title,
       description,
       startTime: new Date(startTime),
       endTime: new Date(endTime),
-      location,
-      agenda,
-      hostName: `${user.firstName} ${user.lastName}`,
-      hostEmail: user.email,
-      participantEmails,
-    })
+      password: undefined,
+    }
+    const host = { firstName: user.firstName, lastName: user.lastName }
+    const invitationLink = `${process.env.NEXTAUTH_URL}`
+    const { subject, html, text } = generateMeetingInvitationEmail(meeting as any, host as any, [], invitationLink)
 
-    if (emailSent) {
-      return NextResponse.json({
-        success: true,
-        message: 'Meeting invitations sent successfully',
-        details: {
-          recipients: participantEmails.length,
-          emails: participantEmails
-        }
-      })
-    } else {
+    const results = await Promise.allSettled(
+      participantEmails.map((to: string) => sendEmail(to, subject, html, text))
+    )
+
+    const succeeded = results.filter(r => r.status === 'fulfilled').length
+    const failed = results.filter(r => r.status === 'rejected').length
+
+    if (failed > 0 && succeeded === 0) {
       return NextResponse.json({
         error: 'Failed to send meeting invitations',
-        details: 'Email service returned false'
+        details: 'All deliveries failed',
       }, { status: 500 })
     }
+
+    return NextResponse.json({
+      success: true,
+      message: `Meeting invitations sent: ${succeeded} succeeded, ${failed} failed`,
+      details: {
+        recipients: participantEmails.length,
+        emails: participantEmails,
+        succeeded,
+        failed,
+      }
+    })
 
   } catch (error) {
     console.error('Error sending meeting invitations:', error)

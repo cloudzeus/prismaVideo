@@ -206,10 +206,24 @@ export function MeetingsTable({
     const startTime = new Date(meeting.startTime);
     const endTime = meeting.endTime ? new Date(meeting.endTime) : null;
     
-    // Can join if meeting is active or within 15 minutes of start time
+    // Can join if meeting is active
     if (meeting.status === 'active') return true;
-    if (meeting.status === 'scheduled' && now >= startTime && now <= new Date(startTime.getTime() + 15 * 60 * 1000)) return true;
-    if (meeting.status === 'scheduled' && now >= startTime && (!endTime || now <= endTime)) return true;
+    
+    // Can join if meeting is scheduled
+    if (meeting.status === 'scheduled') {
+      // Allow joining up to 30 minutes before start time
+      const canJoinBefore = new Date(startTime.getTime() - 30 * 60 * 1000);
+      
+      // Can join if:
+      // 1. Current time is within 30 minutes before start time, OR
+      // 2. Current time is after start time and before end time (if end time exists), OR
+      // 3. Current time is after start time and no end time specified
+      if (now >= canJoinBefore) {
+        if (!endTime || now <= endTime) {
+          return true;
+        }
+      }
+    }
     
     return false;
   };
@@ -393,53 +407,61 @@ export function MeetingsTable({
       cell: ({ row }: { row: any }) => {
         const meeting = row.original;
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            {/* Prominent Join Button */}
+            {canJoinMeeting(meeting) && (
+              <Button
+                onClick={() => handleJoinMeeting(meeting.id)}
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <Play className="mr-2 h-3 w-3" />
+                Join
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              
-              {canJoinMeeting(meeting) && (
-                <DropdownMenuItem onClick={() => handleJoinMeeting(meeting.id)}>
-                  <Play className="mr-2 h-4 w-4" />
-                  Join Meeting
+            )}
+            
+            {/* Other Actions Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="h-8 w-8 p-0">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                
+                <DropdownMenuItem onClick={() => handleCopyLink(meeting)}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copy Link
                 </DropdownMenuItem>
-              )}
-              
-              <DropdownMenuItem onClick={() => handleCopyLink(meeting)}>
-                <Copy className="mr-2 h-4 w-4" />
-                Copy Link
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem onClick={() => handleSendInvitation(meeting)}>
-                <Mail className="mr-2 h-4 w-4" />
-                Send Invitations
-              </DropdownMenuItem>
-              
-              {canEditMeeting(meeting) && (
-                <DropdownMenuItem onClick={() => handleEditMeeting(meeting)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit Meeting
+                
+                <DropdownMenuItem onClick={() => handleSendInvitation(meeting)}>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Send Invitations
                 </DropdownMenuItem>
-              )}
-              
-              <DropdownMenuSeparator />
-              
-              {canDeleteMeeting(meeting) && (
-                <DropdownMenuItem 
-                  onClick={() => handleDeleteMeeting(meeting.id)}
-                  className="text-red-600"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete Meeting
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                
+                {canEditMeeting(meeting) && (
+                  <DropdownMenuItem onClick={() => handleEditMeeting(meeting)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Meeting
+                  </DropdownMenuItem>
+                )}
+                
+                <DropdownMenuSeparator />
+                
+                {canDeleteMeeting(meeting) && (
+                  <DropdownMenuItem 
+                    onClick={() => handleDeleteMeeting(meeting.id)}
+                    className="text-red-600"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete Meeting
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         );
       },
     },

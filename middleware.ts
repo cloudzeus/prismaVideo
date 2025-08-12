@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getToken } from 'next-auth/jwt'
+import { auth } from '@/lib/auth'
 
 // Define protected routes and their required roles
 const protectedRoutes = {
@@ -40,21 +40,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // Get the token from the request
-  const token = await getToken({ 
-    req: request, 
-    secret: process.env.NEXTAUTH_SECRET 
-  })
-
-  // If no token, redirect to login
-  if (!token) {
+  // Get the session from the request
+  const session = await auth()
+  
+  // If no session, redirect to login
+  if (!session?.user) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('callbackUrl', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
   // Check role-based access
-  const userRole = token.role as string
+  const userRole = session.user.role as string
   
   // Find the matching protected route
   const matchingRoute = Object.entries(protectedRoutes).find(([route]) => 
@@ -72,9 +69,9 @@ export async function middleware(request: NextRequest) {
 
   // Add user info to headers for server-side access
   const requestHeaders = new Headers(request.headers)
-  requestHeaders.set('x-user-id', token.id as string)
-  requestHeaders.set('x-user-role', token.role as string)
-  requestHeaders.set('x-user-company-id', token.companyId as string)
+  requestHeaders.set('x-user-id', session.user.id as string)
+  requestHeaders.set('x-user-role', session.user.role as string)
+  requestHeaders.set('x-user-company-id', session.user.companyId as string)
 
   return NextResponse.next({
     request: {
