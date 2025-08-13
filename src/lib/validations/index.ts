@@ -125,15 +125,7 @@ export const fileUploadSchema = z.object({
   allowedTypes: z.array(z.string()).optional(),
 })
 
-// Browser-specific file validation (only use in client components)
-// This will only work in browser environments where File is defined
-export const browserFileUploadSchema = typeof File !== 'undefined' 
-  ? z.object({
-      files: z.array(z.instanceof(File)).min(1, "At least one file is required"),
-      maxSize: z.number().default(10 * 1024 * 1024), // 10MB
-      allowedTypes: z.array(z.string()).optional(),
-    })
-  : fileUploadSchema // Fallback to server-safe schema
+// Note: For browser-specific File validation, import from './browser-validations' in client components
 
 // Search and filter validation schemas
 export const searchSchema = z.object({
