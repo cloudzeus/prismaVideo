@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
     // Build query based on user role
     let whereClause: any = {};
     
-    if (user.role === 'Admin') {
-      // Admins can see all recordings in their company
+    if (user.role === 'Administrator') {
+      // Administrators can see all recordings in their company
       whereClause = {
         call: {
           companyId: user.companyId
