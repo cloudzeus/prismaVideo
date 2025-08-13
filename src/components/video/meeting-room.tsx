@@ -756,64 +756,81 @@ export function MeetingRoom({ meeting, user, isHost, isAdmin }: MeetingRoomProps
       toast({ title: 'Recording Not Allowed', description: 'You do not have permission to record this meeting', variant: 'destructive' })
       return
     }
+    
     if (!isRecording) {
       try {
-        // Start recording using MediaRecorder API
-        if (localStream) {
-          const mediaRecorder = new MediaRecorder(localStream, {
-            mimeType: 'video/webm;codecs=vp8,opus'
-          })
-          
-          const chunks: Blob[] = []
-          
-          mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) {
-              chunks.push(event.data)
-            }
-          }
-          
-          mediaRecorder.onstop = async () => {
-            const blob = new Blob(chunks, { type: 'video/webm' })
-            
-            // Create download link
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url
-            a.download = `meeting-recording-${meeting.id}-${Date.now()}.webm`
-            document.body.appendChild(a)
-            a.click()
-            document.body.removeChild(a)
-            URL.revokeObjectURL(url)
-            
-            toast({
-              title: "Recording Saved",
-              description: "Your meeting recording has been downloaded",
-            })
-          }
-          
-          mediaRecorder.start()
-          setIsRecording(true)
-          
+        // Start Stream.io recording
+        const response = await fetch('/api/meetings/start-recording', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            meetingId: meeting.id,
+            action: 'start'
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to start recording');
+        }
+
+        const result = await response.json();
+        
+        if (result.success) {
+          setIsRecording(true);
           toast({
             title: "Recording Started",
-            description: "Meeting recording is now active",
-          })
+            description: "Meeting recording is now active and will be saved to cloud storage",
+          });
+        } else {
+          throw new Error(result.error || 'Failed to start recording');
         }
       } catch (error) {
-        console.error('Failed to start recording:', error)
+        console.error('Failed to start recording:', error);
         toast({
           title: "Recording Error",
-          description: "Failed to start recording",
+          description: "Failed to start recording. Please try again.",
           variant: 'destructive',
-        })
+        });
       }
     } else {
-      // Stop recording
-      setIsRecording(false)
-      toast({
-        title: "Recording Stopped",
-        description: "Meeting recording has been stopped",
-      })
+      try {
+        // Stop Stream.io recording
+        const response = await fetch('/api/meetings/stop-recording', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            meetingId: meeting.id,
+            action: 'stop'
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to stop recording');
+        }
+
+        const result = await response.json();
+        
+        if (result.success) {
+          setIsRecording(false);
+          toast({
+            title: "Recording Stopped",
+            description: "Recording has been stopped. It will be processed and saved to cloud storage shortly.",
+          });
+        } else {
+          throw new Error(result.error || 'Failed to stop recording');
+        }
+      } catch (error) {
+        console.error('Failed to stop recording:', error);
+        toast({
+          title: "Recording Error",
+          description: "Failed to stop recording. Please try again.",
+          variant: 'destructive',
+        });
+      }
     }
   }
 
