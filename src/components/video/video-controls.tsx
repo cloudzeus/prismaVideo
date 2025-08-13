@@ -17,7 +17,9 @@ import {
   MoreHorizontal,
   Share,
   Circle,
-  Square
+  Square,
+  Volume2,
+  VolumeX
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -27,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
 
 interface VideoControlsProps {
   isAudioEnabled: boolean
@@ -59,7 +62,38 @@ export function VideoControls({
   onOpenChat,
   className
 }: VideoControlsProps) {
-  const [showMoreOptions, setShowMoreOptions] = useState(false)
+  const { toast } = useToast()
+
+  const handleToggleAudio = () => {
+    onToggleAudio()
+    toast({
+      title: isAudioEnabled ? "Microphone Disabled" : "Microphone Enabled",
+      description: isAudioEnabled ? "Your microphone is now muted" : "Your microphone is now active",
+    })
+  }
+
+  const handleToggleVideo = () => {
+    onToggleVideo()
+    toast({
+      title: isVideoEnabled ? "Camera Disabled" : "Camera Enabled",
+      description: isVideoEnabled ? "Your camera is now off" : "Your camera is now active",
+    })
+  }
+
+  const handleToggleRecording = () => {
+    onToggleRecording()
+    if (!isRecording) {
+      toast({
+        title: "Recording Started",
+        description: "Meeting recording is now active",
+      })
+    } else {
+      toast({
+        title: "Recording Stopped",
+        description: "Meeting recording has been stopped",
+      })
+    }
+  }
 
   return (
     <div className={cn(
@@ -70,8 +104,9 @@ export function VideoControls({
       <Button
         variant={isAudioEnabled ? "default" : "destructive"}
         size="icon"
-        onClick={onToggleAudio}
+        onClick={handleToggleAudio}
         className="h-12 w-12 rounded-full"
+        title={isAudioEnabled ? "Mute microphone" : "Unmute microphone"}
       >
         {isAudioEnabled ? (
           <Mic className="h-5 w-5" />
@@ -84,8 +119,9 @@ export function VideoControls({
       <Button
         variant={isVideoEnabled ? "default" : "destructive"}
         size="icon"
-        onClick={onToggleVideo}
+        onClick={handleToggleVideo}
         className="h-12 w-12 rounded-full"
+        title={isVideoEnabled ? "Turn off camera" : "Turn on camera"}
       >
         {isVideoEnabled ? (
           <Video className="h-5 w-5" />
@@ -100,6 +136,7 @@ export function VideoControls({
         size="icon"
         onClick={onToggleScreenShare}
         className="h-12 w-12 rounded-full"
+        title={isScreenSharing ? "Stop screen sharing" : "Start screen sharing"}
       >
         {isScreenSharing ? (
           <MonitorOff className="h-5 w-5" />
@@ -112,8 +149,9 @@ export function VideoControls({
       <Button
         variant={isRecording ? "destructive" : "default"}
         size="icon"
-        onClick={onToggleRecording}
+        onClick={handleToggleRecording}
         className="h-12 w-12 rounded-full"
+        title={isRecording ? "Stop recording" : "Start recording"}
       >
         {isRecording ? (
           <Square className="h-5 w-5" />
@@ -128,6 +166,7 @@ export function VideoControls({
         size="icon"
         onClick={onOpenParticipants}
         className="h-12 w-12 rounded-full"
+        title="View participants"
       >
         <Users className="h-5 w-5" />
       </Button>
@@ -138,6 +177,7 @@ export function VideoControls({
         size="icon"
         onClick={onOpenChat}
         className="h-12 w-12 rounded-full"
+        title="Open chat"
       >
         <MessageSquare className="h-5 w-5" />
       </Button>
@@ -149,35 +189,33 @@ export function VideoControls({
             variant="outline"
             size="icon"
             className="h-12 w-12 rounded-full"
+            title="More options"
           >
             <MoreHorizontal className="h-5 w-5" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="center" className="w-48">
+        <DropdownMenuContent align="center">
           <DropdownMenuItem onClick={onOpenSettings}>
             <Settings className="mr-2 h-4 w-4" />
             Settings
           </DropdownMenuItem>
-          <DropdownMenuItem>
-            <Share className="mr-2 h-4 w-4" />
-            Share Link
-          </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-destructive">
+          <DropdownMenuItem onClick={onLeaveCall} className="text-red-600">
             <PhoneOff className="mr-2 h-4 w-4" />
-            End Call
+            Leave Call
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Leave Call */}
+      {/* Leave Call Button */}
       <Button
         variant="destructive"
         size="icon"
         onClick={onLeaveCall}
         className="h-12 w-12 rounded-full"
+        title="Leave call"
       >
-        <PhoneOff className="h-5 w-5" />
+        <Phone className="h-5 w-5" />
       </Button>
     </div>
   )

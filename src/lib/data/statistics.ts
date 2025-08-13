@@ -198,7 +198,7 @@ async function getUserActivity(companyId: string, isAdmin: boolean, where: any) 
   })
 
   // Get user details for the top participants
-  const userIds = userActivity.map(ua => ua.userId)
+  const userIds = userActivity.map(ua => ua.userId).filter((id): id is string => id !== null)
   const users = await prisma.user.findMany({
     where: { id: { in: userIds } },
     select: {
@@ -238,8 +238,10 @@ async function getUserActivity(companyId: string, isAdmin: boolean, where: any) 
       const durationMinutes = Math.round(duration / (1000 * 60))
       
       meeting.participants.forEach(participant => {
-        const current = userDurations.get(participant.userId) || 0
-        userDurations.set(participant.userId, current + durationMinutes)
+        if (participant.userId) {
+          const current = userDurations.get(participant.userId) || 0
+          userDurations.set(participant.userId, current + durationMinutes)
+        }
       })
     }
   })
@@ -256,14 +258,17 @@ async function getUserActivity(companyId: string, isAdmin: boolean, where: any) 
     },
   })
 
-  const lastActivityMap = new Map(
-    lastActivity.map(la => [la.userId, la._max.joinedAt])
-  )
+  const lastActivityMap = new Map<string, Date>()
+  lastActivity.forEach(la => {
+    if (la.userId && la._max?.joinedAt) {
+      lastActivityMap.set(la.userId, la._max.joinedAt)
+    }
+  })
 
   return userActivity.map(ua => {
     const user = users.find(u => u.id === ua.userId)
-    const totalDuration = userDurations.get(ua.userId) || 0
-    const lastActive = lastActivityMap.get(ua.userId) || new Date()
+    const totalDuration = userDurations.get(ua.userId || '') || 0
+    const lastActive = lastActivityMap.get(ua.userId || '') || new Date()
     
     return {
       userId: ua.userId,
@@ -272,7 +277,7 @@ async function getUserActivity(companyId: string, isAdmin: boolean, where: any) 
       userAvatar: user?.avatar || undefined,
       meetingsAttended: ua._count.userId,
       totalDuration,
-      lastActive: lastActive.toISOString(),
+      lastActive: (lastActive as Date).toISOString(),
       department: user?.department?.name,
       role: user?.role || 'Employee',
     }
@@ -362,7 +367,7 @@ async function getTopUsers(where: any) {
     take: 5,
   })
 
-  const userIds = topUsers.map(tu => tu.userId)
+  const userIds = topUsers.map(tu => tu.userId).filter((id): id is string => id !== null)
   const users = await prisma.user.findMany({
     where: { id: { in: userIds } },
     select: {
@@ -399,15 +404,17 @@ async function getTopUsers(where: any) {
       const durationHours = duration / (1000 * 60 * 60)
       
       meeting.participants.forEach(participant => {
-        const current = userDurations.get(participant.userId) || 0
-        userDurations.set(participant.userId, current + durationHours)
+        if (participant.userId) {
+          const current = userDurations.get(participant.userId) || 0
+          userDurations.set(participant.userId, current + durationHours)
+        }
       })
     }
   })
 
   return topUsers.map(tu => {
     const user = users.find(u => u.id === tu.userId)
-    const totalDuration = Math.round((userDurations.get(tu.userId) || 0) * 100) / 100
+    const totalDuration = Math.round((userDurations.get(tu.userId || '') || 0) * 100) / 100
     
     return {
       id: tu.userId,

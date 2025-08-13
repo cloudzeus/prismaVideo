@@ -162,7 +162,11 @@ export function SettingsDataProvider({ children }: { children: React.ReactNode }
   const refreshDepartments = useCallback(async () => {
     try {
       const response = await fetch('/api/departments/all', {
-        headers: { 'Cache-Control': 'no-cache' }
+        headers: { 
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        },
+        cache: 'no-store'
       })
       
       if (!response.ok) {

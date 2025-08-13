@@ -174,9 +174,9 @@ export async function getDepartmentsForSelect(companyId: string) {
 
 export async function createDepartment(data: {
   name: string;
-  description?: string;
-  parentId?: string;
-  managerId?: string;
+  description?: string | null;
+  parentId?: string | null;
+  managerId?: string | null;
   companyId: string;
 }) {
   return await prisma.department.create({
@@ -205,9 +205,9 @@ export async function updateDepartment(
   id: string,
   data: {
     name?: string;
-    description?: string;
-    parentId?: string;
-    managerId?: string;
+    description?: string | null;
+    parentId?: string | null;
+    managerId?: string | null;
   }
 ) {
   return await prisma.department.update({

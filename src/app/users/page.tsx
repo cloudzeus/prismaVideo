@@ -126,6 +126,7 @@ export default async function UsersPage({
                     status,
                   }}
                   user={user}
+                  departments={departments.data}
                 />
               </div>
             </TabsContent>

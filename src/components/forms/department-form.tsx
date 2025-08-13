@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+
 import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -17,10 +17,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Combobox } from '@/components/ui/combobox';
-import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Building, Users, UserCheck } from 'lucide-react';
-import { departmentFormSchema } from "@/lib/validations"
+
+import { departmentFormSchema } from "@/lib/validations";
 
 type DepartmentFormData = z.infer<typeof departmentFormSchema>;
 
@@ -31,7 +30,6 @@ interface DepartmentFormProps {
     description?: string | null;
     parentId?: string | null;
     managerId?: string | null;
-    isActive: boolean;
   };
   departments: Array<{ id: string; name: string }>;
   users: Array<{ id: string; firstName: string; lastName: string; email: string; role: string }>;
@@ -50,14 +48,22 @@ export function DepartmentForm({ department, departments, users, onSubmit, isLoa
       description: department?.description || '',
       parentId: department?.parentId || '',
       managerId: department?.managerId || '',
-      isActive: department?.isActive !== undefined ? department.isActive : true,
     },
   });
 
   const handleSubmit = async (data: z.infer<typeof departmentFormSchema>) => {
     setIsSubmitting(true);
     try {
-      await onSubmit(data);
+      // Transform the data to match the API expectations
+      const transformedData = {
+        name: data.name,
+        description: data.description || '',
+        parentId: data.parentId || undefined,
+        managerId: data.managerId || undefined,
+      };
+      
+      await onSubmit(transformedData);
+      
       toast({
         title: 'Success',
         description: department ? 'Department updated successfully' : 'Department created successfully',
@@ -90,27 +96,6 @@ export function DepartmentForm({ department, departments, users, onSubmit, isLoa
               </FormItem>
             )}
           />
-
-          <FormField
-            control={form.control}
-            name="isActive"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-base">Active Status</FormLabel>
-                  <FormDescription>
-                    Enable or disable this department
-                  </FormDescription>
-                </div>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
         </div>
 
         <FormField
@@ -124,6 +109,7 @@ export function DepartmentForm({ department, departments, users, onSubmit, isLoa
                   placeholder="Enter department description"
                   className="resize-none"
                   {...field}
+                  value={field.value || ''}
                 />
               </FormControl>
               <FormMessage />

@@ -57,9 +57,10 @@ export async function createMeeting(formData: FormData) {
         description: validatedData.description,
         startTime: validatedData.startTime,
         endTime: validatedData.endTime,
+        type: validatedData.type,
         password: generateMeetingPassword(),
         companyId: session.user.companyId,
-        createdBy: session.user.id,
+        createdById: session.user.id,
         participants: {
           create: [...userParticipants, ...contactParticipants]
         }
@@ -109,7 +110,7 @@ export async function updateMeeting(meetingId: string, formData: FormData) {
     // Only admins, managers, or the meeting creator can update
     if (session.user.role !== "Administrator" && 
         session.user.role !== "Manager" && 
-        existingMeeting.createdBy !== session.user.id) {
+        existingMeeting.createdById !== session.user.id) {
       throw new Error("Unauthorized: You don't have permission to update this meeting")
     }
 
@@ -164,7 +165,7 @@ export async function deleteMeeting(meetingId: string) {
     // Only admins, managers, or the meeting creator can delete
     if (session.user.role !== "Administrator" && 
         session.user.role !== "Manager" && 
-        existingMeeting.createdBy !== session.user.id) {
+        existingMeeting.createdById !== session.user.id) {
       throw new Error("Unauthorized: You don't have permission to delete this meeting")
     }
 
@@ -212,7 +213,7 @@ export async function joinMeeting(meetingId: string) {
     }
 
     // Add user as participant
-    await prisma.callParticipant.create({
+    await prisma.participant.create({
       data: {
         callId: meetingId,
         userId: session.user.id,
@@ -238,7 +239,7 @@ export async function leaveMeeting(meetingId: string) {
 
   try {
     // Remove user from meeting
-    await prisma.callParticipant.deleteMany({
+    await prisma.participant.deleteMany({
       where: {
         callId: meetingId,
         userId: session.user.id
@@ -277,12 +278,12 @@ export async function addParticipant(meetingId: string, userId: string) {
     // Only admins, managers, or the meeting creator can add participants
     if (session.user.role !== "Administrator" && 
         session.user.role !== "Manager" && 
-        meeting.createdBy !== session.user.id) {
+        meeting.createdById !== session.user.id) {
       throw new Error("Unauthorized: You don't have permission to add participants")
     }
 
     // Check if user is already a participant
-    const existingParticipant = await prisma.callParticipant.findFirst({
+    const existingParticipant = await prisma.participant.findFirst({
       where: {
         callId: meetingId,
         userId: userId
@@ -294,7 +295,7 @@ export async function addParticipant(meetingId: string, userId: string) {
     }
 
     // Add participant
-    await prisma.callParticipant.create({
+    await prisma.participant.create({
       data: {
         callId: meetingId,
         userId: userId,
@@ -334,12 +335,12 @@ export async function removeParticipant(meetingId: string, userId: string) {
     // Only admins, managers, or the meeting creator can remove participants
     if (session.user.role !== "Administrator" && 
         session.user.role !== "Manager" && 
-        meeting.createdBy !== session.user.id) {
+        meeting.createdById !== session.user.id) {
       throw new Error("Unauthorized: You don't have permission to remove participants")
     }
 
     // Remove participant
-    await prisma.callParticipant.deleteMany({
+    await prisma.participant.deleteMany({
       where: {
         callId: meetingId,
         userId: userId

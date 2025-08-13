@@ -29,25 +29,7 @@ import { CalendarIcon, Clock, Users, Video, FileText, MapPin, Mail, Search } fro
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 
-const meetingFormSchema = z.object({
-  title: z.string().min(3, "Title must be at least 3 characters"),
-  description: z.string().max(1000, "Description must be less than 1000 characters").optional(),
-  startTime: z.date({
-    required_error: "Start time is required",
-  }),
-  endTime: z.date({
-    required_error: "End time is required",
-  }),
-  type: z.enum(["VIDEO_CALL", "AUDIO_CALL", "SCREEN_SHARE", "PRESENTATION"]),
-  status: z.enum(["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]),
-  participants: z.array(z.string()).min(1, "At least one participant is required"),
-  isPublic: z.boolean(),
-  allowJoinBeforeHost: z.boolean(),
-  recordMeeting: z.boolean(),
-  location: z.string().optional(),
-  agenda: z.string().max(2000, "Agenda must be less than 2000 characters").optional(),
-  attachments: z.array(z.string()).optional(),
-})
+import { meetingFormSchema } from "@/lib/validations"
 
 type MeetingFormValues = z.infer<typeof meetingFormSchema>
 
@@ -61,6 +43,12 @@ interface MeetingFormProps {
 export function MeetingForm({ initialData, participants, onSubmit, isLoading = false }: MeetingFormProps) {
   const { toast } = useToast()
 
+  // Debug: Log the participants prop when component renders
+  console.log('🎯 MeetingForm rendered with participants:', participants);
+  console.log('🎯 MeetingForm participants type:', typeof participants);
+  console.log('🎯 MeetingForm participants is array?', Array.isArray(participants));
+  console.log('🎯 MeetingForm participants length:', participants?.length || 0);
+
   const form = useForm<MeetingFormValues>({
     resolver: zodResolver(meetingFormSchema),
     defaultValues: {
@@ -69,7 +57,7 @@ export function MeetingForm({ initialData, participants, onSubmit, isLoading = f
       startTime: initialData?.startTime || new Date(),
       endTime: initialData?.endTime || new Date(Date.now() + 30 * 60 * 1000), // 30 minutes from now
       type: initialData?.type || "VIDEO_CALL",
-      status: initialData?.status || "SCHEDULED",
+      status: initialData?.status || "SCHEDULED" as const,
       participants: initialData?.participants || [],
       isPublic: initialData?.isPublic ?? false,
       allowJoinBeforeHost: initialData?.allowJoinBeforeHost ?? true,
@@ -79,6 +67,10 @@ export function MeetingForm({ initialData, participants, onSubmit, isLoading = f
       attachments: initialData?.attachments || [],
     },
   })
+
+  // Debug: Log the form values after initialization
+  console.log('🎯 MeetingForm form values after init:', form.getValues());
+  console.log('🎯 MeetingForm participants field value:', form.getValues('participants'));
 
   // Auto-update end time when start time changes
   const handleStartTimeChange = (date: Date) => {
@@ -90,6 +82,38 @@ export function MeetingForm({ initialData, participants, onSubmit, isLoading = f
 
   const handleSubmit = async (data: MeetingFormValues) => {
     try {
+      // Debug: Log the form data
+      console.log('🔍 Debug: Form data being submitted:', data);
+      console.log('🔍 Debug: Participants:', data.participants);
+      console.log('🔍 Debug: Start time:', data.startTime);
+      console.log('🔍 Debug: End time:', data.endTime);
+      console.log('🔍 Debug: Data types:', {
+        title: typeof data.title,
+        description: typeof data.description,
+        startTime: typeof data.startTime,
+        endTime: typeof data.endTime,
+        type: typeof data.type,
+        status: typeof data.status,
+        participants: typeof data.participants,
+        isPublic: typeof data.isPublic,
+        allowJoinBeforeHost: typeof data.allowJoinBeforeHost,
+        recordMeeting: typeof data.recordMeeting,
+        location: typeof data.location,
+        agenda: typeof data.agenda,
+        attachments: typeof data.attachments,
+      });
+      
+      // Debug: Check if participants is an array and has content
+      console.log('🔍 Debug: Participants is array?', Array.isArray(data.participants));
+      console.log('🔍 Debug: Participants length:', data.participants?.length);
+      console.log('🔍 Debug: Participants content:', data.participants);
+      
+      // Debug: Check date objects
+      console.log('🔍 Debug: Start time instanceof Date?', data.startTime instanceof Date);
+      console.log('🔍 Debug: End time instanceof Date?', data.endTime instanceof Date);
+      console.log('🔍 Debug: Start time value:', data.startTime);
+      console.log('🔍 Debug: End time value:', data.endTime);
+      
       // Validate that end time is after start time
       if (data.endTime <= data.startTime) {
         toast({
@@ -100,19 +124,13 @@ export function MeetingForm({ initialData, participants, onSubmit, isLoading = f
         return
       }
 
-      // Ensure dates are properly formatted as ISO strings for API transmission
-      const formattedData = {
-        ...data,
-        startTime: data.startTime.toISOString(),
-        endTime: data.endTime.toISOString(),
-      }
-
-      await onSubmit(formattedData)
+      await onSubmit(data)
       toast({
         title: "Success",
         description: "Meeting saved successfully.",
       })
     } catch (error) {
+      console.error('❌ Form submission error:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to save meeting.",
@@ -125,6 +143,11 @@ export function MeetingForm({ initialData, participants, onSubmit, isLoading = f
     label: `${p.name} (${p.email})`,
     value: p.id,
   })) || []
+
+  // Debug logging for participants
+  console.log('🎯 MeetingForm - Raw participants:', participants);
+  console.log('🎯 MeetingForm - Participant options:', participantOptions);
+  console.log('🎯 MeetingForm - Participants count:', participants?.length || 0);
 
   console.log('🎯 MeetingForm participantOptions:', participantOptions);
   console.log('🎯 MeetingForm participants prop:', participants);
@@ -266,17 +289,17 @@ export function MeetingForm({ initialData, participants, onSubmit, isLoading = f
 
                 <FormField
                   control={form.control}
-                  name="startTime"
+                  name="endTime"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Start Time</FormLabel>
+                      <FormLabel>End Time</FormLabel>
                       <div className="grid grid-cols-2 gap-2">
                         <Select
                           value={field.value ? field.value.getHours().toString() : "9"}
                           onValueChange={(hour) => {
                             const newDate = new Date(field.value || new Date());
                             newDate.setHours(parseInt(hour));
-                            handleStartTimeChange(newDate);
+                            form.setValue("endTime", newDate);
                           }}
                         >
                           <SelectTrigger>
@@ -295,7 +318,7 @@ export function MeetingForm({ initialData, participants, onSubmit, isLoading = f
                           onValueChange={(minute) => {
                             const newDate = new Date(field.value || new Date());
                             newDate.setMinutes(parseInt(minute));
-                            handleStartTimeChange(newDate);
+                            form.setValue("endTime", newDate);
                           }}
                         >
                           <SelectTrigger>
@@ -432,10 +455,11 @@ export function MeetingForm({ initialData, participants, onSubmit, isLoading = f
                       <FormControl>
                         <Combobox
                           options={[
-                            { value: "VIDEO_CALL", label: "Video Conference" },
-                            { value: "AUDIO_CALL", label: "Audio Only" },
-                            { value: "SCREEN_SHARE", label: "Screen Sharing" },
-                            { value: "PRESENTATION", label: "Presentation Mode" }
+                            { value: "VIDEO_CONFERENCE", label: "Video Conference" },
+                            { value: "VIDEO_CALL", label: "Video Call" },
+                            { value: "AUDIO_CALL", label: "Audio Call" },
+                            { value: "SCREEN_SHARE", label: "Screen Share" },
+                            { value: "PRESENTATION", label: "Presentation" }
                           ]}
                           value={field.value}
                           onValueChange={field.onChange}

@@ -1,4 +1,5 @@
 /* eslint-disable */
+/* eslint-disable indent */
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -199,7 +200,7 @@ export function CompaniesTable({ companies, isAdmin, pagination, searchParams }:
         clearTimeout(timer);
       }
     };
-  }, [searchTerm, router, toast]);
+  }, [searchTerm, searchParams?.search]); // Removed router and toast from dependencies
 
   // Effect to sync searchTerm with URL params when they change
   useEffect(() => {
@@ -208,7 +209,7 @@ export function CompaniesTable({ companies, isAdmin, pagination, searchParams }:
       console.log('Syncing searchTerm with URL params:', { searchTerm, currentSearchParam });
       setSearchTerm(currentSearchParam);
     }
-  }, [searchParams?.search]);
+  }, [searchParams?.search, searchTerm]);
 
   // Cleanup effect
   useEffect(() => {
@@ -572,512 +573,478 @@ export function CompaniesTable({ companies, isAdmin, pagination, searchParams }:
     }
   }
 
-  // Main component render with error boundary
-  try {
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Companies</h2>
-          {isAdmin && (
-            <Button onClick={handleCreate}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Company
-            </Button>
-          )}
-        </div>
+  // Main component render
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Companies</h2>
+        {isAdmin && (
+          <Button onClick={handleCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Company
+          </Button>
+        )}
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Company List</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-4">
-              <div className="flex items-center space-x-2">
-                <Search className="h-4 w-4 text-gray-500" />
-                <div className="relative">
-                  <Input
-                    placeholder="Search by name, AFM, email, phone..."
-                    value={searchTerm}
-                    onChange={(e) => {
-                      try {
-                        const newValue = e.target.value;
-                        console.log('Search input changed:', { oldValue: searchTerm, newValue });
-                        setSearchTerm(newValue);
-                        
-                        // Clear search immediately if empty
-                        if (!newValue || newValue.length === 0) {
-                          console.log('Search input cleared, removing search param');
-                          const params = new URLSearchParams(window.location.search);
-                          params.delete('search');
-                          params.set('page', '1');
-                          const newUrl = `?${params.toString()}`;
-                          console.log('Navigating to clear search:', newUrl);
-                          router.push(newUrl);
-                        }
-                      } catch (error) {
-                        console.error('Error updating search term:', error);
-                        toast({
-                          title: "Search Error",
-                          description: "Failed to update search term",
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                    className="w-full sm:w-[200px] md:w-[300px] pr-8"
-                  />
-                  {isSearching && (
-                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                      <RefreshCw className="h-4 w-4 animate-spin text-gray-400" />
-                    </div>
-                  )}
-                </div>
-                {searchTerm && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      try {
-                        console.log('Clearing search term');
-                        setSearchTerm('');
+      <Card>
+        <CardHeader>
+          <CardTitle>Company List</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-4">
+            <div className="flex items-center space-x-2">
+              <Search className="h-4 w-4 text-gray-500" />
+              <div className="relative">
+                <Input
+                  placeholder="Search by name, AFM, email, phone..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    try {
+                      const newValue = e.target.value;
+                      console.log('Search input changed:', { oldValue: searchTerm, newValue });
+                      setSearchTerm(newValue);
+                      
+                      // Clear search immediately if empty
+                      if (!newValue || newValue.length === 0) {
+                        console.log('Search input cleared, removing search param');
                         const params = new URLSearchParams(window.location.search);
                         params.delete('search');
                         params.set('page', '1');
                         const newUrl = `?${params.toString()}`;
                         console.log('Navigating to clear search:', newUrl);
                         router.push(newUrl);
-                      } catch (error) {
-                        console.error('Error clearing search:', error);
-                        toast({
-                          title: "Search Error",
-                          description: "Failed to clear search",
-                          variant: "destructive",
-                        });
                       }
-                    }}
-                    className="h-8 w-8 p-0"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                    } catch (error) {
+                      console.error('Error updating search term:', error);
+                      toast({
+                        title: "Search Error",
+                        description: "Failed to update search term",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  className="w-full sm:w-[200px] md:w-[300px] pr-8"
+                />
+                {isSearching && (
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                    <RefreshCw className="h-4 w-4 animate-spin text-gray-400" />
+                  </div>
                 )}
               </div>
-              
-              {/* Search results indicator */}
               {searchTerm && (
-                <div className="text-sm text-gray-600 mt-2">
-                  {searchTerm.length < 3 ? (
-                    <span className="text-orange-600">
-                      Type {3 - searchTerm.length} more character{3 - searchTerm.length !== 1 ? 's' : ''} to search...
-                    </span>
-                  ) : (
-                    <>
-                      <Search className="h-4 w-4 inline mr-1" />
-                      Searching for "{searchTerm}"...
-                      {isSearching && (
-                        <span className="ml-2 text-blue-600">
-                          <RefreshCw className="h-3 w-3 inline animate-spin mr-1" />
-                          Searching...
-                        </span>
-                      )}
-                      {!isSearching && total > 0 && (
-                        <span className="ml-2 text-green-600">
-                          ✓ Found {total} matching companies
-                        </span>
-                      )}
-                      {!isSearching && total === 0 && searchTerm.length >= 3 && (
-                        <span className="ml-2 text-gray-500">
-                          No companies found matching "{searchTerm}"
-                        </span>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-              <div className="flex items-center space-x-2">
-                <Filter className="h-4 w-4 text-gray-500" />
-                <select
-                  value={selectedType}
-                  onChange={(e) => {
-                    try {
-                      setSelectedType(e.target.value);
-                      const params = new URLSearchParams(window.location.search);
-                      if (e.target.value === 'all') {
-                        params.delete('type');
-                      } else {
-                        params.set('type', e.target.value);
-                      }
-                      params.set('page', '1');
-                      router.push(`?${params.toString()}`);
-                    } catch (error) {
-                      console.error('Error updating type filter:', error);
-                      toast({
-                        title: "Filter Error",
-                        description: "Failed to update type filter",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                  className="border rounded-md p-2 text-sm"
-                >
-                  <option value="all">All Types</option>
-                  <option value="client">Clients</option>
-                  <option value="supplier">Suppliers</option>
-                </select>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    try {
-                      await fetch('/api/companies/revalidate', { method: 'POST' });
-                      router.refresh();
-                    } catch (error) {
-                      console.error('Failed to revalidate cache:', error);
-                      toast({
-                        title: "Refresh Error",
-                        description: "Failed to refresh data, but attempting to reload",
-                        variant: "destructive",
-                      });
-                      // Still try to refresh the router even if revalidation fails
-                      try {
-                        router.refresh();
-                      } catch (refreshError) {
-                        console.error('Failed to refresh router:', refreshError);
-                        toast({
-                          title: "Critical Error",
-                          description: "Failed to refresh the page. Please reload manually.",
-                          variant: "destructive",
-                        });
-                      }
-                    }
-                  }}
-                  className="ml-2"
-                >
-                  <RefreshCw className="h-4 w-4 mr-1" />
-                  Refresh
-                </Button>
-              </div>
-            </div>
-            
-            {/* Results counter */}
-            <div className="mb-4 text-sm text-gray-600">
-              Showing {startIndex + 1}-{Math.min(endIndex, total)} of {total} companies
-              {totalPages > 1 && (
-                <span className="ml-2">(Page {currentPage} of {totalPages})</span>
-              )}
-              {(searchTerm || selectedType !== 'all' || sortField !== 'none') && (
-                <span className="ml-2">
-                  (filtered by {searchTerm ? `"${searchTerm}"` : ''} {searchTerm && selectedType !== 'all' ? 'and ' : ''}{selectedType !== 'all' ? selectedType : ''} {sortField !== 'none' ? `sorted by ${sortField}` : ''})
-                </span>
-              )}
-              {(searchTerm || selectedType !== 'all' || sortField !== 'none') ? (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={clearFilters}
-                  className="ml-2 h-6 px-2 text-xs"
+                  onClick={() => {
+                    try {
+                      console.log('Clearing search term');
+                      setSearchTerm('');
+                      const params = new URLSearchParams(window.location.search);
+                      params.delete('search');
+                      params.set('page', '1');
+                      const newUrl = `?${params.toString()}`;
+                      console.log('Navigating to clear search:', newUrl);
+                      router.push(newUrl);
+                    } catch (error) {
+                      console.error('Error clearing search:', error);
+                      toast({
+                        title: "Search Error",
+                        description: "Failed to clear search",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  className="h-8 w-8 p-0"
                 >
-                  Clear filters
+                  <X className="h-4 w-4" />
                 </Button>
-              ) : null}
+              )}
             </div>
-
-            {/* Error boundary for table rendering */}
-            {(() => {
-              try {
-                return (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead 
-                          className="cursor-pointer hover:bg-gray-50"
-                          onClick={() => handleSort('AFM')}
-                        >
-                          <div className="flex items-center space-x-1">
-                            <span>AFM</span>
-                            {getSortIcon('AFM')}
-                          </div>
-                        </TableHead>
-                        <TableHead 
-                          className="cursor-pointer hover:bg-gray-50"
-                          onClick={() => handleSort('name')}
-                        >
-                          <div className="flex items-center space-x-1">
-                            <span>Name</span>
-                            {getSortIcon('name')}
-                          </div>
-                        </TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Phone01</TableHead>
-                        <TableHead
-                          className="cursor-pointer hover:bg-gray-50"
-                          onClick={() => handleSort('address')}
-                        >
-                          <div className="flex items-center space-x-1">
-                            <span>Location</span>
-                            {getSortIcon('address')}
-                          </div>
-                        </TableHead>
-                        {isAdmin && <TableHead>Actions</TableHead>}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paginatedCompanies.map((company) => (
-                        <TableRow key={company.id}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{company.AFM || 'N/A'}</div>
-                              <div className="text-sm text-gray-500">
-                                {company.IRSDATA || 'N/A'}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">
-                                {highlightText(company.name || 'N/A', searchTerm)}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={company.type === 'client' ? 'default' : 'secondary'}>
-                              {company.type || 'N/A'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm text-gray-600">
-                              {company.email || company.EMAILACC ? (
-                                <div className="flex items-center">
-                                  <Mail className="h-3 w-3 mr-1" />
-                                  {highlightText(company.email || company.EMAILACC || '', searchTerm)}
-                                </div>
-                              ) : 'N/A'}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-1">
-                              {company.PHONE01 && (
-                                <div className="flex items-center text-sm text-gray-600">
-                                  <Phone className="h-3 w-3 mr-1" />
-                                  {highlightText(company.PHONE01, searchTerm)}
-                                </div>
-                              )}
-                              {!company.PHONE01 && 'N/A'}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center text-sm text-gray-600">
-                              <MapPin className="h-3 w-3 mr-1" />
-                              {company.address && highlightText(company.address, searchTerm)}
-                              {company.city && (
-                                <>
-                                  {company.address && ', '}
-                                  {highlightText(company.city, searchTerm)}
-                                </>
-                              )}
-                              {company.country && (
-                                <>
-                                  {(company.address || company.city) && ', '}
-                                  {highlightText(company.country, searchTerm)}
-                                </>
-                              )}
-                              {!company.address && !company.city && !company.country && 'N/A'}
-                            </div>
-                          </TableCell>
-                          {isAdmin && (
-                            <TableCell>
-                              <div className="flex items-center space-x-2">
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleAddContact(company)}
-                                        className="h-8 w-8 p-0"
-                                      >
-                                        <UserPlus className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Add Contact</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleEdit(company)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDelete(company)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                );
-              } catch (tableError) {
-                console.error('Error rendering table:', tableError);
-                return (
-                  <div className="text-center py-8">
-                    <div className="text-red-600 mb-4">
-                      <AlertCircle className="h-12 w-12 mx-auto mb-2" />
-                      <h3 className="text-lg font-semibold">Error Rendering Table</h3>
-                      <p className="text-sm text-gray-600">
-                        There was an error displaying the companies table.
-                      </p>
-                    </div>
-                    <Button
-                      onClick={() => window.location.reload()}
-                      variant="outline"
-                    >
-                      Reload Page
-                    </Button>
-                  </div>
-                );
-              }
-            })()}
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-gray-600">
-                  Page {currentPage} of {totalPages}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigateToPage(currentPage - 1)}
-                    disabled={currentPage <= 1}
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigateToPage(currentPage + 1)}
-                    disabled={currentPage >= totalPages}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
+            
+            {/* Search results indicator */}
+            {searchTerm && (
+              <div className="text-sm text-gray-600 mt-2">
+                {searchTerm.length < 3 ? (
+                  <span className="text-orange-600">
+                    Type {3 - searchTerm.length} more character{3 - searchTerm.length !== 1 ? 's' : ''} to search...
+                  </span>
+                ) : (
+                  <>
+                    <Search className="h-4 w-4 inline mr-1" />
+                    Searching for "{searchTerm}"...
+                    {isSearching && (
+                      <span className="ml-2 text-blue-600">
+                        <RefreshCw className="h-3 w-3 inline animate-spin mr-1" />
+                        Searching...
+                      </span>
+                    )}
+                    {!isSearching && total > 0 && (
+                      <span className="ml-2 text-green-600">
+                        ✓ Found {total} matching companies
+                      </span>
+                    )}
+                    {!isSearching && total === 0 && searchTerm.length >= 3 && (
+                      <span className="ml-2 text-gray-500">
+                        No companies found matching "{searchTerm}"
+                      </span>
+                    )}
+                  </>
+                )}
               </div>
             )}
-          </CardContent>
-        </Card>
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-gray-500" />
+              <select
+                value={selectedType}
+                onChange={(e) => {
+                  try {
+                    setSelectedType(e.target.value);
+                    const params = new URLSearchParams(window.location.search);
+                    if (e.target.value === 'all') {
+                      params.delete('type');
+                    } else {
+                      params.set('type', e.target.value);
+                    }
+                    params.set('page', '1');
+                    router.push(`?${params.toString()}`);
+                  } catch (error) {
+                    console.error('Error updating type filter:', error);
+                    toast({
+                      title: "Filter Error",
+                      description: "Failed to update type filter",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+                className="border rounded-md p-2 text-sm"
+              >
+                <option value="all">All Types</option>
+                <option value="client">Clients</option>
+                <option value="supplier">Suppliers</option>
+              </select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    await fetch('/api/companies/revalidate', { method: 'POST' });
+                    router.refresh();
+                  } catch (error) {
+                    console.error('Failed to revalidate cache:', error);
+                    toast({
+                      title: "Refresh Error",
+                      description: "Failed to refresh data, but attempting to reload",
+                      variant: "destructive",
+                    });
+                    // Still try to refresh the router even if revalidation fails
+                    try {
+                      router.refresh();
+                    } catch (refreshError) {
+                      console.error('Failed to refresh router:', refreshError);
+                      toast({
+                        title: "Critical Error",
+                        description: "Failed to refresh the page. Please reload manually.",
+                        variant: "destructive",
+                      });
+                    }
+                  }
+                }}
+                className="ml-2"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Refresh
+              </Button>
+            </div>
+          </div>
+          
+          {/* Results counter */}
+          <div className="mb-4 text-sm text-gray-600">
+            Showing {startIndex + 1}-{Math.min(endIndex, total)} of {total} companies
+            {totalPages > 1 && (
+              <span className="ml-2">(Page {currentPage} of {totalPages})</span>
+            )}
+            {(searchTerm || selectedType !== 'all' || sortField !== 'none') && (
+              <span className="ml-2">
+                (filtered by {searchTerm ? `"${searchTerm}"` : ''} {searchTerm && selectedType !== 'all' ? 'and ' : ''}{selectedType !== 'all' ? selectedType : ''} {sortField !== 'none' ? `sorted by ${sortField}` : ''})
+              </span>
+            )}
+            {(searchTerm || selectedType !== 'all' || sortField !== 'none') ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="ml-2 h-6 px-2 text-xs"
+              >
+                Clear filters
+              </Button>
+            ) : null}
+          </div>
 
-        {/* Modals */}
-        {isCreateModalOpen && (
-          <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Create New Company</DialogTitle>
-                <DialogDescription>
-                  Add a new company to the system
-                </DialogDescription>
-              </DialogHeader>
-              <CompanyForm
-                onSubmit={handleCreateSubmit}
-                onCancel={() => setIsCreateModalOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
-        )}
+          {/* Error boundary for table rendering */}
+          {(() => {
+            try {
+              return (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-gray-50"
+                        onClick={() => handleSort('AFM')}
+                      >
+                        <div className="flex items-center space-x-1">
+                          <span>AFM</span>
+                          {getSortIcon('AFM')}
+                        </div>
+                      </TableHead>
+                      <TableHead 
+                        className="cursor-pointer hover:bg-gray-50"
+                        onClick={() => handleSort('name')}
+                      >
+                        <div className="flex items-center space-x-1">
+                          <span>Name</span>
+                          {getSortIcon('name')}
+                        </div>
+                      </TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone01</TableHead>
+                      <TableHead
+                        className="cursor-pointer hover:bg-gray-50"
+                        onClick={() => handleSort('address')}
+                      >
+                        <div className="flex items-center space-x-1">
+                          <span>Location</span>
+                          {getSortIcon('address')}
+                        </div>
+                      </TableHead>
+                      {isAdmin && <TableHead>Actions</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedCompanies.map((company) => (
+                      <TableRow key={company.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{company.AFM || 'N/A'}</div>
+                            <div className="text-sm text-gray-500">
+                              {company.IRSDATA || 'N/A'}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {highlightText(company.name || 'N/A', searchTerm)}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={company.type === 'client' ? 'default' : 'secondary'}>
+                            {company.type || 'N/A'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm text-gray-600">
+                            {company.email || company.EMAILACC ? (
+                              <div className="flex items-center">
+                                <Mail className="h-3 w-3 mr-1" />
+                                {highlightText(company.email || company.EMAILACC || '', searchTerm)}
+                              </div>
+                            ) : 'N/A'}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-1">
+                            {company.PHONE01 && (
+                              <div className="flex items-center text-sm text-gray-600">
+                                <Phone className="h-3 w-3 mr-1" />
+                                {highlightText(company.PHONE01, searchTerm)}
+                              </div>
+                            )}
+                            {!company.PHONE01 && 'N/A'}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center text-sm text-gray-600">
+                            <MapPin className="h-3 w-3 mr-1" />
+                            {company.address && highlightText(company.address, searchTerm)}
+                            {company.city && (
+                              <>
+                                {company.address && ', '}
+                                {highlightText(company.city, searchTerm)}
+                              </>
+                            )}
+                            {company.country && (
+                              <>
+                                {(company.address || company.city) && ', '}
+                                {highlightText(company.country, searchTerm)}
+                              </>
+                            )}
+                            {!company.address && !company.city && !company.country && 'N/A'}
+                          </div>
+                        </TableCell>
+                        {isAdmin && (
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleAddContact(company)}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <UserPlus className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Add Contact</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(company)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(company)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              );
+            } catch (tableError) {
+              console.error('Error rendering table:', tableError);
+              return (
+                <div className="text-center py-8">
+                  <div className="text-red-600 mb-4">
+                    <AlertCircle className="h-12 w-12 mx-auto mb-2" />
+                    <h3 className="text-lg font-semibold">Error Rendering Table</h3>
+                    <p className="text-sm text-gray-600">
+                      There was an error displaying the companies table.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => window.location.reload()}
+                    variant="outline"
+                  >
+                    Reload Page
+                  </Button>
+                </div>
+              );
+            }
+          })()}
 
-        {isEditModalOpen && selectedCompany && (
-          <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Edit Company</DialogTitle>
-                <DialogDescription>
-                  Update company information
-                </DialogDescription>
-              </DialogHeader>
-              <CompanyForm
-                company={selectedCompany}
-                onSubmit={handleEditSubmit}
-                onCancel={() => setIsEditModalOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
-        )}
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateToPage(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateToPage(currentPage + 1)}
+                  disabled={currentPage >= totalPages}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        {isDeleteModalOpen && selectedCompany && (
-          <AlertDialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Company</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete "{selectedCompany.name}"? This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setIsDeleteModalOpen(false)}>
-                  Cancel
-                </AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+      {/* Modals */}
+      {isCreateModalOpen && (
+        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Create New Company</DialogTitle>
+              <DialogDescription>
+                Add a new company to the system
+              </DialogDescription>
+            </DialogHeader>
+            <CompanyForm
+              onSubmit={handleCreateSubmit}
+              onCancel={() => setIsCreateModalOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
-        {/* Contact Creation Modal */}
-        {isContactModalOpen && selectedCompany && (
-          <CreateContactModal
-            open={isContactModalOpen}
-            onOpenChange={setIsContactModalOpen}
-            company={selectedCompany}
-          />
-        )}
-      </div>
-    );
-  } catch (renderError) {
-    console.error('Critical error rendering companies table:', renderError);
-    return (
-      <div className="text-center py-12">
-        <div className="text-red-600 mb-6">
-          <AlertCircle className="h-16 w-16 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Critical Error</h2>
-          <p className="text-gray-600 mb-4">
-            The companies table encountered a critical error and cannot be displayed.
-          </p>
-          <p className="text-sm text-gray-500 mb-6">
-            Error: {renderError instanceof Error ? renderError.message : 'Unknown error'}
-          </p>
-        </div>
-        <div className="space-y-3">
-          <Button
-            onClick={() => window.location.reload()}
-            variant="default"
-            size="lg"
-          >
-            Reload Page
-          </Button>
-          <Button
-            onClick={() => router.push('/')}
-            variant="outline"
-            size="lg"
-          >
-            Go to Dashboard
-          </Button>
-        </div>
-      </div>
-    );
-  }
+      {isEditModalOpen && selectedCompany && (
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Company</DialogTitle>
+              <DialogDescription>
+                Update company information
+              </DialogDescription>
+            </DialogHeader>
+            <CompanyForm
+              company={selectedCompany}
+              onSubmit={handleEditSubmit}
+              onCancel={() => setIsEditModalOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {isDeleteModalOpen && selectedCompany && (
+        <AlertDialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Company</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{selectedCompany.name}"? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setIsDeleteModalOpen(false)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {/* Contact Creation Modal */}
+      {isContactModalOpen && selectedCompany && (
+        <CreateContactModal
+          open={isContactModalOpen}
+          onOpenChange={setIsContactModalOpen}
+          company={selectedCompany}
+        />
+      )}
+    </div>
+  );
 } 

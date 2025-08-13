@@ -48,29 +48,47 @@ export const userUpdateSchema = userFormBaseSchema.extend({
 export const meetingFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters").max(200, "Title must be less than 200 characters"),
   description: z.string().max(1000, "Description must be less than 1000 characters").optional(),
-  startTime: z.union([
-    z.date(),
-    z.string().transform((val) => new Date(val))
-  ]).refine((date) => date instanceof Date && !isNaN(date.getTime()), {
-    message: "Invalid start time"
+  startTime: z.date({
+    required_error: "Start time is required",
   }),
-  endTime: z.union([
-    z.date(),
-    z.string().transform((val) => new Date(val))
-  ]).refine((date) => date instanceof Date && !isNaN(date.getTime()), {
-    message: "Invalid end time"
+  endTime: z.date({
+    required_error: "End time is required",
   }),
-  type: z.enum(["VIDEO_CALL", "AUDIO_CALL", "SCREEN_SHARE", "PRESENTATION"]),
-  status: z.enum(["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]).default("SCHEDULED"),
+  type: z.enum(["VIDEO_CALL", "AUDIO_CALL", "SCREEN_SHARE", "PRESENTATION", "VIDEO_CONFERENCE"]),
+  status: z.enum(["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]),
   participants: z.array(z.string()).min(1, "At least one participant is required"),
-  isPublic: z.boolean().default(false),
-  allowJoinBeforeHost: z.boolean().default(true),
-  recordMeeting: z.boolean().default(false),
+  isPublic: z.boolean(),
+  allowJoinBeforeHost: z.boolean(),
+  recordMeeting: z.boolean(),
   location: z.string().max(255, "Location must be less than 255 characters").optional(),
   agenda: z.string().max(2000, "Agenda must be less than 2000 characters").optional(),
   attachments: z.array(z.string()).optional(),
 }).refine((data) => {
   return data.endTime > data.startTime
+}, {
+  message: "End time must be after start time",
+  path: ["endTime"],
+})
+
+export const meetingUpdateSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters").max(200, "Title must be less than 200 characters").optional(),
+  description: z.string().max(1000, "Description must be less than 1000 characters").optional(),
+  startTime: z.date().optional(),
+  endTime: z.date().optional(),
+  type: z.enum(["VIDEO_CALL", "AUDIO_CALL", "SCREEN_SHARE", "PRESENTATION", "VIDEO_CONFERENCE"]).optional(),
+  status: z.enum(["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]).optional(),
+  participants: z.array(z.string()).optional(),
+  isPublic: z.boolean().optional(),
+  allowJoinBeforeHost: z.boolean().optional(),
+  recordMeeting: z.boolean().optional(),
+  location: z.string().max(255, "Location must be less than 255 characters").optional(),
+  agenda: z.string().max(2000, "Agenda must be less than 2000 characters").optional(),
+  attachments: z.array(z.string()).optional(),
+}).refine((data) => {
+  if (data.startTime && data.endTime) {
+    return data.endTime > data.startTime
+  }
+  return true
 }, {
   message: "End time must be after start time",
   path: ["endTime"],
@@ -94,12 +112,11 @@ export const companyFormSchema = z.object({
 
 // Department validation schemas
 export const departmentFormSchema = z.object({
-  name: z.string().min(2, "Department name must be at least 2 characters").max(100, "Department name must be less than 100 characters"),
-  description: z.string().max(500, "Description must be less than 500 characters").optional(),
-  parentId: z.string().optional(),
-  managerId: z.string().optional(),
-  isActive: z.boolean(),
-})
+  name: z.string().min(2, 'Department name must be at least 2 characters').max(100, 'Department name must be less than 100 characters'),
+  description: z.union([z.string().max(500, 'Description must be less than 500 characters'), z.null()]).optional(),
+  parentId: z.union([z.string(), z.null()]).optional(),
+  managerId: z.union([z.string(), z.null()]).optional(),
+});
 
 // File upload validation schemas
 export const fileUploadSchema = z.object({

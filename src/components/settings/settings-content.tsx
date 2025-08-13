@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Building2, Network, Mail, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,15 +11,23 @@ import { SmtpSettings } from './smtp-settings';
 
 export function SettingsContent() {
   const [isPageLoading, setIsPageLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('company');
+  const searchParams = useSearchParams();
 
   useEffect(() => {
+    // Check if there's a tab query parameter
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['company', 'departments', 'smtp'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+    
     // Simulate page loading completion
     const timer = setTimeout(() => {
       setIsPageLoading(false);
     }, 500);
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [searchParams]);
 
   if (isPageLoading) {
     return (
@@ -33,7 +42,7 @@ export function SettingsContent() {
   }
 
   return (
-    <Tabs defaultValue="company" className="space-y-6">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
       <TabsList className="grid w-full grid-cols-3">
         <TabsTrigger value="company" className="flex items-center space-x-2">
           <Building2 className="h-4 w-4" />

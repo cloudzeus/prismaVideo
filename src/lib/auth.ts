@@ -149,21 +149,7 @@ declare module 'next-auth' {
   }
 }
 
-declare module 'next-auth/jwt' {
-  interface JWT {
-    id: string
-    role: string
-    companyId: string
-    companyName: string
-    companyType: string
-    departmentId: string | null
-    departmentName: string | null
-    firstName: string
-    lastName: string
-    avatar: string | null
-    phone: string | null
-  }
-}
+// JWT module declaration removed for NextAuth v5 compatibility
 
 // Role checking utilities
 export function hasPermission(userRole: string, requiredRole: string): boolean {

@@ -42,11 +42,10 @@ export function SimpleVideoConference({ meeting, user, isHost, isAdmin }: Simple
   const [participants, setParticipants] = useState<any[]>([])
   const [isJoining, setIsJoining] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [localParticipant, setLocalParticipant] = useState<any>(null)
   
   const localVideoRef = useRef<HTMLVideoElement>(null)
-  const remoteVideoRef = useRef<HTMLVideoElement>(null)
   const localStreamRef = useRef<MediaStream | null>(null)
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null)
   
   const { toast } = useToast()
 
@@ -70,34 +69,29 @@ export function SimpleVideoConference({ meeting, user, isHost, isAdmin }: Simple
         localVideoRef.current.srcObject = stream
       }
       
-      // Initialize WebRTC peer connection
-      const peerConnection = new RTCPeerConnection({
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
-        ]
+      // Set local participant
+      setLocalParticipant({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        avatar: user.avatar,
+        isLocal: true,
+        isHost: isHost
       })
       
-      peerConnectionRef.current = peerConnection
-      
-      // Add local stream to peer connection
-      stream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, stream)
-      })
-      
-      // Handle incoming tracks
-      peerConnection.ontrack = (event) => {
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = event.streams[0]
-        }
-      }
-      
-      // Handle ICE candidates
-      peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          // In a real app, you'd send this to other participants via signaling server
-          console.log('ICE candidate:', event.candidate)
-        }
+      // Load meeting participants
+      if (meeting.participants && meeting.participants.length > 0) {
+        const meetingParticipants = meeting.participants.map((p: any) => ({
+          id: p.userId || p.contactId,
+          firstName: p.user?.firstName || p.contact?.firstName,
+          lastName: p.user?.lastName || p.contact?.lastName,
+          email: p.user?.email || p.contact?.email,
+          avatar: p.user?.avatar || p.contact?.avatarUrl,
+          isLocal: false,
+          isHost: p.userId === meeting.createdById
+        }))
+        setParticipants(meetingParticipants)
       }
       
       setIsInCall(true)
@@ -147,13 +141,9 @@ export function SimpleVideoConference({ meeting, user, isHost, isAdmin }: Simple
       localStreamRef.current = null
     }
     
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close()
-      peerConnectionRef.current = null
-    }
-    
     setIsInCall(false)
     setParticipants([])
+    setLocalParticipant(null)
     
     toast({
       title: "Call Ended",
@@ -249,25 +239,6 @@ export function SimpleVideoConference({ meeting, user, isHost, isAdmin }: Simple
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Video Area */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Remote Video (Other Participants) */}
-          <Card className="aspect-video bg-black">
-            <CardContent className="p-0 h-full flex items-center justify-center">
-              {isInCall ? (
-                <video
-                  ref={remoteVideoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full h-full object-cover rounded-lg"
-                />
-              ) : (
-                <div className="text-white text-center">
-                  <Users className="mx-auto h-16 w-16 mb-4 opacity-50" />
-                  <p>Waiting for other participants...</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Local Video */}
           <Card className="aspect-video bg-black">
             <CardContent className="p-0 h-full flex items-center justify-center">
@@ -287,42 +258,40 @@ export function SimpleVideoConference({ meeting, user, isHost, isAdmin }: Simple
               )}
             </CardContent>
           </Card>
-        </div>
 
-        {/* Participants Panel */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Participants ({participants.length + 1})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {/* Current User */}
-                <div className="flex items-center gap-3 p-2 rounded-lg bg-muted">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatar} />
-                    <AvatarFallback>
-                      {user.firstName?.[0]}{user.lastName?.[0]}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {user.firstName} {user.lastName} (You)
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {user.email}
-                    </p>
+          {/* Participants Grid */}
+          <Card className="bg-muted/50">
+            <CardContent className="p-4">
+              <h3 className="text-lg font-medium mb-4">Conference Participants</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Local Participant */}
+                {localParticipant && (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={localParticipant.avatar} />
+                      <AvatarFallback>
+                        {localParticipant.firstName?.[0]}{localParticipant.lastName?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {localParticipant.firstName} {localParticipant.lastName} (You)
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {localParticipant.email}
+                      </p>
+                      <div className="flex gap-1 mt-1">
+                        {localParticipant.isHost && <Badge variant="secondary">Host</Badge>}
+                        <Badge variant="default">Local</Badge>
+                      </div>
+                    </div>
                   </div>
-                  <Badge variant="secondary">Host</Badge>
-                </div>
+                )}
 
                 {/* Other Participants */}
                 {participants.map((participant, index) => (
-                  <div key={index} className="flex items-center gap-3 p-2 rounded-lg">
-                    <Avatar className="h-8 w-8">
+                  <div key={participant.id || index} className="flex items-center gap-3 p-3 rounded-lg bg-card border">
+                    <Avatar className="h-12 w-12">
                       <AvatarImage src={participant.avatar} />
                       <AvatarFallback>
                         {participant.firstName?.[0]}{participant.lastName?.[0]}
@@ -335,19 +304,28 @@ export function SimpleVideoConference({ meeting, user, isHost, isAdmin }: Simple
                       <p className="text-xs text-muted-foreground truncate">
                         {participant.email}
                       </p>
+                      <div className="flex gap-1 mt-1">
+                        {participant.isHost && <Badge variant="secondary">Host</Badge>}
+                        <Badge variant="outline">Remote</Badge>
+                      </div>
                     </div>
-                    <Badge variant="outline">Participant</Badge>
                   </div>
                 ))}
 
                 {participants.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No other participants yet
-                  </p>
+                  <div className="col-span-full text-center py-8 text-muted-foreground">
+                    <Users className="mx-auto h-12 w-12 mb-2 opacity-50" />
+                    <p>No other participants yet</p>
+                    <p className="text-sm">Share the meeting link to invite others</p>
+                  </div>
                 )}
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Meeting Info Panel */}
+        <div className="space-y-4">
 
           {/* Meeting Info */}
           <Card>

@@ -99,13 +99,18 @@ interface UsersTableProps {
   pagination: Pagination;
   currentFilters: CurrentFilters;
   user: CurrentUser;
+  departments: Array<{
+    id: string;
+    name: string;
+  }>;
 }
 
 export function UsersTable({ 
   users, 
   pagination, 
   currentFilters, 
-  user 
+  user, 
+  departments 
 }: UsersTableProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -604,7 +609,7 @@ export function UsersTable({
             setSelectedUser(null);
           }}
           onSave={handleSaveUser}
-          departments={[]} // TODO: Pass actual departments data
+          departments={departments}
           isLoading={isLoading}
         />
       </div>

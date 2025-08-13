@@ -189,15 +189,16 @@ export function MeetingsTable({
   };
 
   const getTypeBadge = (type: string) => {
-    switch (type) {
+    switch (type.toUpperCase()) {
+      case 'VIDEO_CALL':
+      case 'VIDEO_CONFERENCE':
+        return <Badge variant="default">Video Conference</Badge>;
       case 'meeting':
-        return <Badge variant="default">Meeting</Badge>;
+        return <Badge variant="default">Video Conference</Badge>;
       case 'webinar':
-        return <Badge variant="secondary">Webinar</Badge>;
-      case 'training':
-        return <Badge variant="outline">Training</Badge>;
+        return <Badge variant="secondary">Video Conference</Badge>;
       default:
-        return <Badge variant="outline">{type}</Badge>;
+        return <Badge variant="default">Video Conference</Badge>;
     }
   };
 
@@ -206,23 +207,12 @@ export function MeetingsTable({
     const startTime = new Date(meeting.startTime);
     const endTime = meeting.endTime ? new Date(meeting.endTime) : null;
     
-    // Can join if meeting is active
-    if (meeting.status === 'active') return true;
-    
-    // Can join if meeting is scheduled
-    if (meeting.status === 'scheduled') {
-      // Allow joining up to 30 minutes before start time
-      const canJoinBefore = new Date(startTime.getTime() - 30 * 60 * 1000);
-      
-      // Can join if:
-      // 1. Current time is within 30 minutes before start time, OR
-      // 2. Current time is after start time and before end time (if end time exists), OR
-      // 3. Current time is after start time and no end time specified
-      if (now >= canJoinBefore) {
-        if (!endTime || now <= endTime) {
-          return true;
-        }
-      }
+    // All video conferences can be joined
+    if (meeting.type === 'VIDEO_CONFERENCE' || meeting.type === 'VIDEO_CALL') {
+      // Can join if meeting is active or scheduled
+      if (meeting.status === 'active' || meeting.status === 'ACTIVE') return true;
+      if (meeting.status === 'scheduled' || meeting.status === 'SCHEDULED') return true;
+      if (meeting.status === 'IN_PROGRESS') return true;
     }
     
     return false;

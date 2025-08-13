@@ -258,17 +258,26 @@ export function DepartmentHierarchy() {
     e.preventDefault()
     
     try {
+      // Clean up the form data - convert empty strings and undefined to null for optional fields
+      const cleanedFormData = {
+        name: formData.name,
+        description: formData.description || null,
+        parentId: formData.parentId === "" || formData.parentId === undefined ? null : formData.parentId,
+        managerId: formData.managerId === "" || formData.managerId === undefined ? null : formData.managerId,
+      };
+      
       if (editingDepartment) {
         const response = await fetch(`/api/departments/${editingDepartment.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(cleanedFormData),
         })
         
         if (!response.ok) {
-          throw new Error('Failed to update department')
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update department')
         }
         
         toast({
@@ -281,11 +290,12 @@ export function DepartmentHierarchy() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(cleanedFormData),
         })
         
         if (!response.ok) {
-          throw new Error('Failed to create department')
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create department')
         }
         
         toast({
@@ -297,12 +307,19 @@ export function DepartmentHierarchy() {
       setIsDialogOpen(false)
       setEditingDepartment(null)
       resetForm()
+      
+      // Refresh the data to show the new/updated department
       await loadData()
+      
+      // Also refresh the shared data context
+      if (refreshData) {
+        await refreshData()
+      }
     } catch (error) {
       console.error('Error saving department:', error)
       toast({
         title: "Error",
-        description: "Failed to save department",
+        description: error instanceof Error ? error.message : 'Failed to save department',
         variant: "destructive",
       })
     }

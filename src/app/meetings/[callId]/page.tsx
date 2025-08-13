@@ -1,7 +1,7 @@
 import { redirect, notFound } from 'next/navigation';
 import { getAuthSession } from '@/lib/auth';
 import { getMeetingById } from '@/lib/data/meetings';
-import { SimpleVideoConference } from '@/components/video/simple-video-conference';
+import { StreamMeetingRoomSimple } from '@/components/video/stream-meeting-room-simple';
 
 interface MeetingPageProps {
   params: Promise<{
@@ -46,7 +46,7 @@ export default async function MeetingPage({ params, searchParams }: MeetingPageP
 
   return (
     <div className="h-screen bg-background">
-      <SimpleVideoConference 
+      <StreamMeetingRoomSimple 
         meeting={meeting}
         user={user}
         isHost={isHost}

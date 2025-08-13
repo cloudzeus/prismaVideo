@@ -13,7 +13,45 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const validatedData = meetingFormSchema.parse(body)
+    
+    // Debug: Log the incoming data
+    console.log('🔍 API Debug: Incoming request body:', body);
+    console.log('🔍 API Debug: Body type:', typeof body);
+    console.log('🔍 API Debug: Body keys:', Object.keys(body));
+    console.log('🔍 API Debug: Participants:', body.participants);
+    console.log('🔍 API Debug: Start time:', body.startTime);
+    console.log('🔍 API Debug: End time:', body.endTime);
+    
+    // Fix: Convert string dates to Date objects before validation
+    const processedBody = {
+      ...body,
+      startTime: new Date(body.startTime),
+      endTime: new Date(body.endTime)
+    };
+    
+    console.log('🔍 API Debug: Processed body with Date objects:', {
+      startTime: processedBody.startTime,
+      endTime: processedBody.endTime,
+      startTimeType: typeof processedBody.startTime,
+      endTimeType: typeof processedBody.endTime
+    });
+    
+    let validatedData;
+    try {
+      validatedData = meetingFormSchema.parse(processedBody)
+      console.log('✅ API Debug: Validation successful:', validatedData);
+    } catch (validationError: any) {
+      console.error('❌ API Debug: Validation failed:', validationError);
+      console.error('❌ API Debug: Validation issues:', validationError.issues);
+      
+      // Return detailed validation error
+      return NextResponse.json({ 
+        error: 'Validation failed', 
+        details: validationError.issues,
+        receivedData: body,
+        processedData: processedBody
+      }, { status: 400 })
+    }
 
     // Separate user and contact participants
     const userParticipants = []

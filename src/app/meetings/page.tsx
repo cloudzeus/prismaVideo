@@ -7,7 +7,7 @@ import { MeetingsTable } from '@/components/meetings/meetings-table';
 import { getAuthSession } from '@/lib/auth';
 import { getMeetingsByCompany } from '@/lib/data/meetings';
 import { getUsersByCompany } from '@/lib/data/users';
-import { getContactsByCompany } from '@/lib/data/contacts';
+import { getContacts } from '@/lib/data/contacts';
 
 export default async function MeetingsPage({
   searchParams,
@@ -68,7 +68,7 @@ export default async function MeetingsPage({
         id: participant.contact.id,
         firstName: participant.contact.firstName,
         lastName: participant.contact.lastName,
-        email: participant.contact.email,
+        email: participant.contact.email || '',
         avatarUrl: null,
       } : undefined,
     }))
@@ -83,13 +83,20 @@ export default async function MeetingsPage({
     }
   );
 
-  // Fetch contacts for the meeting modal
-  const contacts = await getContactsByCompany(user.companyId);
+  // Fetch ALL contacts for the meeting modal
+  const rawContacts = await getContacts();
   
-  // Debug logging
-  console.log('🔍 Debug: Fetched contacts:', contacts);
-  console.log('🔍 Debug: User company ID:', user.companyId);
-  console.log('🔍 Debug: Contacts count:', contacts.length);
+  // Transform contacts to match the expected interface (with companyId)
+  const contacts = rawContacts.map(contact => ({
+    id: contact.id,
+    firstName: contact.firstName,
+    lastName: contact.lastName,
+    email: contact.email || '',
+    companyId: contact.companies[0]?.companyId || user.companyId, // Use first company or fallback to user's company
+  }));
+  
+  console.log('🔍 Debug: ALL contacts in database:', rawContacts.length);
+  console.log('🔍 Debug: Transformed contacts:', contacts.length);
 
   return (
     <div className="min-h-screen bg-background">

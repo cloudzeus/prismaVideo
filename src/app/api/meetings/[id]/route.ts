@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth()
@@ -13,7 +13,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const meetingId = params.id
+    const { id: meetingId } = await params
 
     const meeting = await prisma.call.findUnique({
       where: { id: meetingId },
@@ -126,8 +126,6 @@ export async function PUT(
         endTime: body.endTime ? new Date(body.endTime) : null,
         type: body.type,
         status: body.status,
-        location: body.location,
-        agenda: body.agenda,
       },
       include: {
         company: true,

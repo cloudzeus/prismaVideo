@@ -77,6 +77,8 @@ export function Navigation({ user }: NavigationProps) {
     { href: '/statistics', label: 'Statistics', icon: BarChart3 },
     { href: '/settings', label: 'Settings', icon: Settings },
     { href: '/test-contacts', label: 'Test Contacts', icon: UserPlus },
+    { href: '/test-audio', label: 'Audio Test', icon: Video },
+    { href: '/test-video-conference', label: 'Video Test', icon: Video },
   ]
 
   return (

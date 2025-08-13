@@ -49,6 +49,8 @@ export const CreateMeetingButton = ({ user, users, contacts }: CreateMeetingButt
   useEffect(() => {
     if (isOpen) {
       console.log('🎯 Modal opened, setting participants from props...');
+      console.log('🎯 Modal opened - users:', users);
+      console.log('🎯 Modal opened - contacts:', contacts);
       setParticipantsFromProps();
     }
   }, [isOpen, users, contacts]);
@@ -58,6 +60,17 @@ export const CreateMeetingButton = ({ user, users, contacts }: CreateMeetingButt
       console.log('🎯 Setting participants from props...');
       console.log('🎯 Users from props:', users);
       console.log('🎯 Contacts from props:', contacts);
+      console.log('🎯 Total users count:', users?.length || 0);
+      console.log('🎯 Total contacts count:', contacts?.length || 0);
+      console.log('🎯 Contact details:', contacts?.map(c => ({ id: c.id, firstName: c.firstName, lastName: c.lastName, email: c.email })));
+      
+      // Check if users and contacts are defined
+      if (!users || !contacts) {
+        console.error('🎯 Users or contacts are undefined!');
+        console.error('🎯 Users:', users);
+        console.error('🎯 Contacts:', contacts);
+        return;
+      }
       
       // Combine and format participants from props
       const allParticipants = [
@@ -68,7 +81,9 @@ export const CreateMeetingButton = ({ user, users, contacts }: CreateMeetingButt
         })),
         ...contacts.map((contact: Contact) => ({
           id: contact.id,
-          name: `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.email || 'Unknown Contact',
+          name: contact.firstName && contact.lastName 
+            ? `${contact.firstName} ${contact.lastName}`.trim()
+            : contact.firstName || contact.lastName || contact.email || 'Contact',
           email: contact.email,
         })),
       ];
@@ -107,6 +122,14 @@ export const CreateMeetingButton = ({ user, users, contacts }: CreateMeetingButt
     try {
       setIsLoading(true);
       
+      // Debug: Log the data being sent
+      console.log('🔍 Debug: Data being sent to API:', meetingData);
+      console.log('🔍 Debug: Data type:', typeof meetingData);
+      console.log('🔍 Debug: Data keys:', Object.keys(meetingData));
+      console.log('🔍 Debug: Participants:', meetingData.participants);
+      console.log('🔍 Debug: Start time:', meetingData.startTime);
+      console.log('🔍 Debug: End time:', meetingData.endTime);
+      
       // Create the meeting via API
       const response = await fetch('/api/meetings', {
         method: 'POST',
@@ -116,13 +139,38 @@ export const CreateMeetingButton = ({ user, users, contacts }: CreateMeetingButt
         body: JSON.stringify(meetingData),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create meeting');
+      // Safe logging of response details
+      try {
+        console.log('🔍 Debug: Response status:', response.status);
+        console.log('🔍 Debug: Response status text:', response.statusText);
+      } catch (logError) {
+        console.warn('Could not log response status:', logError);
       }
 
-      const result = await response.json();
-      console.log('Meeting created:', result);
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        let errorDetails = null;
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+          errorDetails = errorData.details || errorData;
+          console.error('🔍 Debug: API Error response:', errorData);
+        } catch (parseError) {
+          console.warn('Could not parse error response:', parseError);
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      let result = null;
+      try {
+        result = await response.json();
+        console.log('✅ Meeting created successfully:', result);
+      } catch (parseError) {
+        console.warn('Could not parse success response:', parseError);
+        result = { success: true, message: 'Meeting created but response could not be parsed' };
+      }
 
       toast({
         title: 'Success',
@@ -134,7 +182,18 @@ export const CreateMeetingButton = ({ user, users, contacts }: CreateMeetingButt
       // Refresh the page to show the new meeting
       window.location.reload();
     } catch (error) {
-      console.error('Error creating meeting:', error);
+      console.error('❌ Error creating meeting:', error);
+      
+      // Safe error logging
+      try {
+        if (error instanceof Error) {
+          console.error('❌ Error message:', error.message);
+          console.error('❌ Error stack:', error.stack);
+        }
+      } catch (logError) {
+        console.warn('Could not log error details:', logError);
+      }
+      
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to create meeting',

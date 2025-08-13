@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = "mysql://root:Prof%4015%401f1femsk@5.189.130.31:3333/videoPrisma"
+  url      = env("DATABASE_URL")
 }
 
 model Company {

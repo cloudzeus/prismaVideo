@@ -1,23 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { getDepartmentsByCompany, createDepartment } from '@/lib/data/departments';
-import { z } from 'zod';
-import { revalidatePath } from 'next/cache';
+import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 
-const createDepartmentSchema = z.object({
-  name: z.string().min(2, 'Department name must be at least 2 characters'),
-  description: z.string().optional(),
-  parentId: z.string().optional(),
-  managerId: z.string().optional(),
-});
+import { z } from 'zod';
+
+import { auth } from '@/lib/auth';
+import { getDepartmentsByCompany, createDepartment } from '@/lib/data/departments';
+import { departmentFormSchema } from '@/lib/validations';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
-    
+    const session = await auth();
+
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const user = session.user;
@@ -54,10 +49,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
-    
+    const session = await auth();
+
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const user = session.user;
@@ -71,8 +66,22 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     
-    // Validate input
-    const validatedData = createDepartmentSchema.parse(body);
+    console.log('Department creation request body:', body);
+    console.log('User company ID:', user.companyId);
+
+    // Clean up the data - convert empty strings and undefined to null for optional fields
+    const cleanedData = {
+      name: body.name,
+      description: body.description === "" || body.description === undefined ? null : body.description,
+      parentId: body.parentId === "" || body.parentId === undefined ? null : body.parentId,
+      managerId: body.managerId === "" || body.managerId === undefined ? null : body.managerId,
+    };
+    
+    console.log('Cleaned data:', cleanedData);
+
+    // Validate input using the correct schema
+    const validatedData = departmentFormSchema.parse(cleanedData);
+    console.log('Validated data:', validatedData);
 
     // Create department
     const department = await createDepartment({
@@ -80,12 +89,16 @@ export async function POST(request: NextRequest) {
       companyId: user.companyId,
     });
 
-    // Revalidate the settings page to show the new department
+    // Revalidate multiple paths and tags to ensure data is fresh
     revalidatePath('/settings');
+    revalidatePath('/api/departments');
+    revalidatePath('/api/departments/all');
+    revalidateTag('departments');
 
     return NextResponse.json(department, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('Validation error:', error.errors);
       return NextResponse.json(
         { error: 'Validation error', details: error.errors },
         { status: 400 }

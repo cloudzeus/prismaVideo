@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { DepartmentForm } from '@/components/forms/department-form';
 import { Plus, Building } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface User {
   id: string;
@@ -40,11 +42,59 @@ interface CreateDepartmentButtonProps {
 
 export function CreateDepartmentButton({ user, departments, users }: CreateDepartmentButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
 
-  const handleDepartmentCreated = async () => {
-    setIsOpen(false);
-    // Optionally refresh the page or update the departments list
-    window.location.reload();
+  const handleDepartmentCreated = async (data: any) => {
+    try {
+      setIsSubmitting(true);
+      
+      // Clean up the form data - convert empty strings and undefined to null for optional fields
+      const cleanedData = {
+        name: data.name,
+        description: data.description || null,
+        parentId: data.parentId === "" || data.parentId === undefined ? null : data.parentId,
+        managerId: data.managerId === "" || data.managerId === undefined ? null : data.managerId,
+      };
+      
+      // Create the department via API
+      const response = await fetch('/api/departments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(cleanedData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create department');
+      }
+
+      const newDepartment = await response.json();
+      
+      toast({
+        title: 'Success',
+        description: 'Department created successfully',
+      });
+
+      // Close the dialog
+      setIsOpen(false);
+      
+      // Refresh the current page to show updated data
+      router.refresh();
+      
+    } catch (error) {
+      console.error('Error creating department:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to create department',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -71,6 +121,7 @@ export function CreateDepartmentButton({ user, departments, users }: CreateDepar
           departments={departments}
           users={users}
           onSubmit={handleDepartmentCreated}
+          isLoading={isSubmitting}
         />
       </DialogContent>
     </Dialog>
