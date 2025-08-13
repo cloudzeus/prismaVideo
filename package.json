@@ -105,6 +105,9 @@
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
+  "overrides": {
+    "picomatch": "^4.0.0"
+  },
   "description": "A modern, comprehensive video conference management platform built with Next.js 15.3.4, Prisma ORM, Stream.io video integration, and Bunny CDN for file storage. Features role-based authentication, multi-tenant architecture, and server-side rendering for optimal performance.",
   "main": "next.config.js",
   "author": "",
