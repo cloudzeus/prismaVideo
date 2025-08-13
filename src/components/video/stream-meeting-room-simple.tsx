@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   CallControls,
   SpeakerLayout,
@@ -8,7 +8,8 @@ import {
   StreamTheme,
   StreamVideo,
   StreamVideoClient,
-  User,
+  useCall,
+  useCallStateHooks,
 } from '@stream-io/video-react-sdk';
 
 import '@stream-io/video-react-sdk/dist/css/styles.css';
@@ -17,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Crown } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface StreamMeetingRoomProps {
   meeting: any;
@@ -30,8 +32,58 @@ export function StreamMeetingRoomSimple({ meeting, user, isHost, isAdmin }: Stre
   const [call, setCall] = useState<any>(null);
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { data: session, status } = useSession();
+
+  // Custom participant list component to handle deduplication
+  const CustomParticipantList = () => {
+    const call = useCall();
+    const { useParticipants } = useCallStateHooks();
+    const participants = useParticipants();
+    
+    // Deduplicate participants by ID
+    const uniqueParticipants = participants.filter((participant, index, self) => 
+      index === self.findIndex(p => p.userId === participant.userId)
+    );
+
+    // Filter out local user from the list if you don't want to show them
+    const remoteParticipants = uniqueParticipants.filter(p => !p.isLocalParticipant);
+
+    return (
+      <div className="p-4">
+        <h3 className="text-white font-semibold mb-4">Participants ({uniqueParticipants.length})</h3>
+        <div className="space-y-2">
+          {uniqueParticipants.map((participant) => (
+            <div key={participant.userId} className="flex items-center space-x-3 p-2 rounded-lg bg-gray-700">
+              <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm">
+                  {participant.name?.[0] || 'U'}
+                </span>
+              </div>
+              <div className="flex-1">
+                <p className="text-white text-sm">
+                  {participant.name || 'Unknown User'}
+                  {participant.isLocalParticipant && ' (You)'}
+                </p>
+                <p className="text-gray-400 text-xs">
+                  {participant.isLocalParticipant ? 'Local' : 'Remote'}
+                </p>
+              </div>
+              {participant.isLocalParticipant && (
+                <Badge variant="secondary" className="text-xs">Local</Badge>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   useEffect(() => {
+    // Only initialize Stream when we have a valid session
+    if (status === 'loading' || !session?.user) {
+      return;
+    }
+
     const initializeStream = async () => {
       try {
         setIsJoining(true);
@@ -47,7 +99,8 @@ export function StreamMeetingRoomSimple({ meeting, user, isHost, isAdmin }: Stre
         });
 
         if (!response.ok) {
-          throw new Error('Failed to get Stream token');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to get Stream token');
         }
 
         const { token, apiKey } = await response.json();
@@ -88,7 +141,38 @@ export function StreamMeetingRoomSimple({ meeting, user, isHost, isAdmin }: Stre
         client.disconnectUser();
       }
     };
-  }, [meeting.id, user.id, user.firstName, user.lastName, user.avatar]);
+  }, [meeting.id, user.id, user.firstName, user.lastName, user.avatar, session, status]);
+
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if not authenticated
+  if (status === 'unauthenticated' || !session?.user) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Card className="w-96">
+          <CardHeader>
+            <CardTitle className="text-red-600">Authentication Required</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 mb-4">You must be logged in to join this video conference.</p>
+            <Button onClick={() => window.location.href = '/login'}>
+              Go to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (error) {
     return (
@@ -156,6 +240,11 @@ export function StreamMeetingRoomSimple({ meeting, user, isHost, isAdmin }: Stre
           </StreamTheme>
         </StreamCall>
       </StreamVideo>
+
+      {/* Custom Participant List Sidebar */}
+      <div className="absolute right-4 top-20 w-80 bg-gray-800 rounded-lg shadow-lg">
+        <CustomParticipantList />
+      </div>
     </div>
   );
 }
