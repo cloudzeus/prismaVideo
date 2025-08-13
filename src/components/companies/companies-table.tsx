@@ -1,5 +1,4 @@
 /* eslint-disable */
-/* eslint-disable indent */
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';

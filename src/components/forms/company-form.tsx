@@ -41,7 +41,7 @@ const companyFormSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
   website: z.string().url('Invalid website URL').optional().or(z.literal('')),
-  logo: z.union([z.string(), z.instanceof(File)]).optional(),
+  logo: z.union([z.string(), z.any()]).optional(),
   // Additional ERP fields
   TRDR: z.string().optional(),
   CODE: z.string().optional(),
@@ -88,13 +88,13 @@ interface CompanyFormProps {
     UPDDATE?: string | null;
     default?: boolean | null;
   };
-  onSubmit: (data: CompanyFormData & { logo?: File }) => Promise<void>;
+  onSubmit: (data: CompanyFormData & { logo?: any }) => Promise<void>;
   onCancel?: () => void;
 }
 
 export function CompanyForm({ company, onSubmit, onCancel }: CompanyFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoFile, setLogoFile] = useState<any>(null);
   const [isVatLookingUp, setIsVatLookingUp] = useState(false);
   const { toast } = useToast();
 

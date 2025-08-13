@@ -1,4 +1,7 @@
 import { redirect } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
+
 import { getAuthSession } from '@/lib/auth';
 import { getRecentMeetings, getUpcomingMeetings, getQuickStats } from '@/lib/data/meetings';
 import { getCompanyStats } from '@/lib/data/companies';

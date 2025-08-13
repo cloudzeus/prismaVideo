@@ -8,8 +8,6 @@ import {
   StreamTheme,
   StreamVideo,
   StreamVideoClient,
-  useCall,
-  useCallStateHooks,
 } from '@stream-io/video-react-sdk';
 
 import '@stream-io/video-react-sdk/dist/css/styles.css';
@@ -36,43 +34,24 @@ export function StreamMeetingRoomSimple({ meeting, user, isHost, isAdmin }: Stre
 
   // Custom participant list component to handle deduplication
   const CustomParticipantList = () => {
-    const call = useCall();
-    const { useParticipants } = useCallStateHooks();
-    const participants = useParticipants();
-    
-    // Deduplicate participants by ID
-    const uniqueParticipants = participants.filter((participant, index, self) => 
-      index === self.findIndex(p => p.userId === participant.userId)
-    );
-
-    // Filter out local user from the list if you don't want to show them
-    const remoteParticipants = uniqueParticipants.filter(p => !p.isLocalParticipant);
-
     return (
       <div className="p-4">
-        <h3 className="text-white font-semibold mb-4">Participants ({uniqueParticipants.length})</h3>
+        <h3 className="text-white font-semibold mb-4">Participants</h3>
         <div className="space-y-2">
-          {uniqueParticipants.map((participant) => (
-            <div key={participant.userId} className="flex items-center space-x-3 p-2 rounded-lg bg-gray-700">
-              <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm">
-                  {participant.name?.[0] || 'U'}
-                </span>
-              </div>
-              <div className="flex-1">
-                <p className="text-white text-sm">
-                  {participant.name || 'Unknown User'}
-                  {participant.isLocalParticipant && ' (You)'}
-                </p>
-                <p className="text-gray-400 text-xs">
-                  {participant.isLocalParticipant ? 'Local' : 'Remote'}
-                </p>
-              </div>
-              {participant.isLocalParticipant && (
-                <Badge variant="secondary" className="text-xs">Local</Badge>
-              )}
+          <div className="flex items-center space-x-3 p-2 rounded-lg bg-gray-700">
+            <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-sm">
+                {user.firstName?.[0]}{user.lastName?.[0]}
+              </span>
             </div>
-          ))}
+            <div className="flex-1">
+              <p className="text-white text-sm">
+                {user.firstName} {user.lastName} (You)
+              </p>
+              <p className="text-gray-400 text-xs">Local</p>
+            </div>
+            <Badge variant="secondary" className="text-xs">Local</Badge>
+          </div>
         </div>
       </div>
     );
@@ -95,7 +74,7 @@ export function StreamMeetingRoomSimple({ meeting, user, isHost, isAdmin }: Stre
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ userId: user.id, meetingId: meeting.id }),
+          body: JSON.stringify({ callId: meeting.id }),
         });
 
         if (!response.ok) {

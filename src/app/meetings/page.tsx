@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 import { Navigation } from '@/components/layout/navigation';
 import { CreateMeetingButton } from '@/components/meetings/create-meeting-button';
 import { MeetingsTable } from '@/components/meetings/meetings-table';

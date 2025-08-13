@@ -9,6 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Metadata } from 'next';
 import { Suspense } from 'react';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Contacts | Video Prisma',
   description: 'Manage your contacts and their company associations',

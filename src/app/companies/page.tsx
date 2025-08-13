@@ -6,6 +6,8 @@ import { CompaniesTable } from '@/components/companies/companies-table';
 import { unstable_cache } from 'next/cache';
 import { Metadata } from 'next';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Companies | Video Prisma',
   description: 'Manage and view all companies in the system',

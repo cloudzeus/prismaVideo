@@ -1,4 +1,7 @@
 import { redirect } from 'next/navigation';
+
+export const dynamic = 'force-dynamic';
+
 import { getAuthSession } from '@/lib/auth';
 import { getStatistics } from '@/lib/data/statistics';
 import { Navigation } from '@/components/layout/navigation';

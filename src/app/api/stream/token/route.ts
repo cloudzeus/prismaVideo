@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-import { StreamChat } from 'stream-chat';
-
 import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 const STREAM_API_KEY = process.env.STREAM_API_KEY;
 const STREAM_SECRET = process.env.STREAM_SECRET;
@@ -15,35 +13,76 @@ export async function POST(request: NextRequest) {
   try {
     // Authenticate the user
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { userId, meetingId } = await request.json();
+    const { callId } = await request.json();
 
-    // Verify the user is requesting their own token
-    if (session.user.id !== userId) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!callId) {
+      return NextResponse.json({ error: 'Call ID is required' }, { status: 400 });
     }
 
-    // Generate Stream Video token using server SDK
-    const serverClient = StreamChat.getInstance(STREAM_API_KEY!, STREAM_SECRET!);
+    // Verify the user has access to this meeting
+    const meeting = await prisma.call.findFirst({
+      where: {
+        id: callId,
+        OR: [
+          { createdById: session.user.id },
+          { participants: { some: { userId: session.user.id } } }
+        ]
+      },
+      include: {
+        participants: true
+      }
+    });
 
-    // Create a user token for video calls
-    const token = serverClient.createToken(userId);
+    if (!meeting) {
+      return NextResponse.json({ error: 'Meeting not found or access denied' }, { status: 404 });
+    }
+
+    // Generate Stream Video token
+    const token = generateStreamVideoToken(session.user.id);
 
     return NextResponse.json({
       token,
       apiKey: STREAM_API_KEY,
       userId: session.user.id,
-      meetingId,
+      userName: `${session.user.firstName} ${session.user.lastName}`,
+      callId: callId,
     });
 
   } catch (error) {
-    console.error('Stream token generation error:', error);
+    console.error('Error generating Stream Video token:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to generate token' },
       { status: 500 }
     );
   }
+}
+
+// Generate Stream Video token
+function generateStreamVideoToken(userId: string): string {
+  const { createHmac } = require('crypto');
+  
+  const header = {
+    alg: 'HS256',
+    typ: 'JWT'
+  };
+  
+  const payload = {
+    user_id: userId,
+    exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // 24 hours
+    iat: Math.floor(Date.now() / 1000),
+    iss: STREAM_API_KEY
+  };
+  
+  const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64url');
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  
+  const signature = createHmac('sha256', STREAM_SECRET)
+    .update(`${encodedHeader}.${encodedPayload}`)
+    .digest('base64url');
+  
+  return `${encodedHeader}.${encodedPayload}.${signature}`;
 }
