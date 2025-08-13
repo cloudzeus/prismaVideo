@@ -120,6 +120,13 @@ export const departmentFormSchema = z.object({
 
 // File upload validation schemas
 export const fileUploadSchema = z.object({
+  files: z.array(z.any()).min(1, "At least one file is required"), // Use z.any() for server compatibility
+  maxSize: z.number().default(10 * 1024 * 1024), // 10MB
+  allowedTypes: z.array(z.string()).optional(),
+})
+
+// Browser-specific file validation (only use in client components)
+export const browserFileUploadSchema = z.object({
   files: z.array(z.instanceof(File)).min(1, "At least one file is required"),
   maxSize: z.number().default(10 * 1024 * 1024), // 10MB
   allowedTypes: z.array(z.string()).optional(),
