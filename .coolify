@@ -1,0 +1,29 @@
+# Coolify Configuration
+# This file tells Coolify how to deploy your application
+
+# Disable Docker build
+DOCKER_BUILD=false
+
+# Use standard Next.js build
+BUILD_COMMAND=npm run build
+START_COMMAND=npm start
+
+# Port configuration
+PORT=3000
+
+# Environment variables (these should be set in Coolify dashboard)
+# DATABASE_URL
+# NEXTAUTH_SECRET
+# NEXTAUTH_URL
+# STREAM_API_KEY
+# STREAM_SECRET
+# STREAM_WEBHOOK_SECRET
+# BUNNY_ACCESS_KEY
+# BUNNY_STORAGE_ZONE
+# BUNNY_CDN_URL
+# BUNNY_STORAGE_URL
+# SMTP_HOST
+# SMTP_PORT
+# SMTP_USER
+# SMTP_PASS
+# SMTP_FROM
