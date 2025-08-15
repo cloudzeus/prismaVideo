@@ -36,6 +36,8 @@ import { useToast } from '@/hooks/use-toast'
 import { AudioLevelIndicator } from './audio-level-indicator'
 import { SpeakingIndicator } from './speaking-indicator'
 import { MeetingLobby } from './meeting-lobby'
+import { MeetingDurationWarning } from './meeting-duration-warning'
+import { useMeetingDuration } from '@/hooks/use-meeting-duration'
 
 interface MeetingRoomProps {
   meeting: any
@@ -83,10 +85,32 @@ export function MeetingRoom({ meeting, user, isHost, isAdmin }: MeetingRoomProps
   const [allowedRecorders, setAllowedRecorders] = useState<Set<string>>(new Set())
   const [chatMessages, setChatMessages] = useState<Array<{ id: string; senderId: string; content: string; timestamp: number }>>([])
   const [isChatGloballyMuted, setIsChatGloballyMuted] = useState(false)
+  const [meetingStartTime, setMeetingStartTime] = useState<Date>(new Date())
   
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const remoteVideosRef = useRef<{ [key: string]: HTMLVideoElement }>({})
   const { toast } = useToast()
+
+  // Meeting duration tracking
+  const {
+    duration,
+    showWarning,
+    hasShownWarning,
+    dismissWarning,
+  } = useMeetingDuration({
+    startTime: meetingStartTime,
+    isHost,
+    onDurationWarning: () => {
+      toast({
+        title: "Meeting Duration Warning",
+        description: "This meeting has exceeded 1 hour. Please respond to continue or stop.",
+        variant: "destructive",
+      });
+    },
+    onAutoStop: () => {
+      endCall();
+    },
+  });
 
   // WebRTC configuration
   const rtcConfig = {
@@ -98,6 +122,9 @@ export function MeetingRoom({ meeting, user, isHost, isAdmin }: MeetingRoomProps
 
   const initializeVideoConference = async () => {
     if (isJoining) return
+    
+    // Set meeting start time when initializing
+    setMeetingStartTime(new Date())
     
     setIsJoining(true)
     setError(null)
@@ -1190,6 +1217,14 @@ export function MeetingRoom({ meeting, user, isHost, isAdmin }: MeetingRoomProps
             <p className="text-gray-400 text-sm">
               {isHost ? 'Host' : 'Participant'} • {participants.length + 1} participants
             </p>
+            <p className="text-gray-400 text-sm font-mono">
+              Duration: {duration}
+            </p>
+            {duration && parseInt(duration.split(':')[0] || '0') >= 1 && !hasShownWarning && (
+              <p className="text-amber-400 text-sm">
+                ⚠️ Meeting duration warning approaching
+              </p>
+            )}
           </div>
         </div>
         
@@ -1470,6 +1505,14 @@ export function MeetingRoom({ meeting, user, isHost, isAdmin }: MeetingRoomProps
           </Button>
         )}
       </div>
+
+      {/* Meeting Duration Warning Modal */}
+      <MeetingDurationWarning
+        isOpen={showWarning}
+        onContinue={dismissWarning}
+        onStop={endCall}
+        meetingTitle={meeting.title}
+      />
     </div>
   )
 } 

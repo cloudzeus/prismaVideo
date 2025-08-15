@@ -30,21 +30,6 @@ export default async function LoginPage() {
             <LoginForm />
           </Suspense>
         </div>
-
-        <div className="text-center text-sm text-muted-foreground">
-          <p>
-            Demo credentials:
-          </p>
-          <p className="mt-1">
-            Admin: admin@acme.com / admin123
-          </p>
-          <p>
-            Manager: manager@acme.com / manager123
-          </p>
-          <p>
-            User: user@acme.com / user123
-          </p>
-        </div>
       </div>
     </div>
   );

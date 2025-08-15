@@ -24,7 +24,8 @@ import {
   Menu,
   X,
   UserPlus,
-  Settings
+  Settings,
+  FileText
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
@@ -71,14 +72,12 @@ export function Navigation({ user }: NavigationProps) {
   const navigationItems = [
     { href: '/', label: 'Dashboard', icon: Home },
     { href: '/meetings', label: 'Meetings', icon: Video },
+    { href: '/recordings', label: 'Recordings', icon: FileText },
     { href: '/companies', label: 'Companies', icon: Building2 },
     { href: '/contacts', label: 'Contacts', icon: UserPlus },
     { href: '/users', label: 'Users', icon: Users },
     { href: '/statistics', label: 'Statistics', icon: BarChart3 },
     { href: '/settings', label: 'Settings', icon: Settings },
-    { href: '/test-contacts', label: 'Test Contacts', icon: UserPlus },
-    { href: '/test-audio', label: 'Audio Test', icon: Video },
-    { href: '/test-video-conference', label: 'Video Test', icon: Video },
   ]
 
   return (
