@@ -16,7 +16,15 @@ export default async function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
+        <div className="text-center space-y-4">
+          <div className="flex justify-center">
+            <img 
+              src="https://videoConf.b-cdn.net/videoNamager.svg" 
+              alt="Communication Manager Logo" 
+              className="w-auto"
+              style={{ height: '80px' }}
+            />
+          </div>
           <h1 className="text-3xl font-bold tracking-tight">
             Welcome back
           </h1>

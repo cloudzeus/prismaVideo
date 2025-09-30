@@ -376,8 +376,9 @@ export function CompanySettings() {
             <AlertDialogTitle>Confirm Company Change</AlertDialogTitle>
             <AlertDialogDescription>
               You are about to change the default company from <strong>{defaultCompany?.name}</strong> to <strong>{companies.find(c => c.id === selectedCompany)?.name}</strong>.
-              <br /><br />
-              This will move ALL data to the new company:
+            </AlertDialogDescription>
+            <div className="text-sm text-muted-foreground">
+              <p>This will move ALL data to the new company:</p>
               <ul className="mt-2 space-y-1 list-disc list-inside">
                 <li>All users (managers, employees, administrators)</li>
                 <li>All departments and their hierarchy</li>
@@ -385,9 +386,8 @@ export function CompanySettings() {
                 <li>All contacts and meetings</li>
                 <li>All other company-related data</li>
               </ul>
-              <br />
-              <strong className="text-red-600">This action cannot be undone!</strong>
-            </AlertDialogDescription>
+              <p className="mt-2 font-semibold text-red-600">This action cannot be undone!</p>
+            </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

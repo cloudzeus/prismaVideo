@@ -1,22 +1,39 @@
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
+import { getAuthSession } from '@/lib/auth';
+import { Navigation } from '@/components/layout/navigation';
 import { RecordingsContent } from '@/components/recordings/recordings-content';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function RecordingsPage() {
-  return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Recordings</h1>
-          <p className="text-muted-foreground">
-            View and manage all meeting recordings
-          </p>
-        </div>
-      </div>
+export const dynamic = 'force-dynamic';
 
-      <Suspense fallback={<RecordingsSkeleton />}>
-        <RecordingsContent />
-      </Suspense>
+export default async function RecordingsPage() {
+  const session = await getAuthSession();
+
+  if (!session?.user) {
+    redirect('/login');
+  }
+
+  const user = session.user;
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Navigation user={user} />
+      
+      <main className="container mx-auto py-6 pt-24 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Recordings</h1>
+            <p className="text-muted-foreground">
+              View and manage all meeting recordings
+            </p>
+          </div>
+        </div>
+
+        <Suspense fallback={<RecordingsSkeleton />}>
+          <RecordingsContent />
+        </Suspense>
+      </main>
     </div>
   );
 }

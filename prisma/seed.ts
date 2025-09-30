@@ -1,277 +1,166 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting database seed...');
+  console.log('🌱 Starting database seed (meetings/recordings only, no departments/companies/users creation)...');
 
-  // Create default company
-  const company = await prisma.company.upsert({
-    where: { id: 'default-company' },
-    update: {},
-    create: {
-      id: 'default-company',
-      COMPANY: 'ACME001',
-      LOCKID: 'LOCK001',
-      SODTYPE: 'CORPORATE',
-      name: 'Acme Corporation',
-      type: 'client',
-      address: '123 Business Street',
-      city: 'New York',
-      country: 'USA',
-      phone: '+1-555-0123',
-      email: 'contact@acme.com',
-      website: 'https://acme.com',
-      default: true,
-    },
-  });
+  // Resolve target company dynamically (prefer default company)
 
-  console.log('✅ Company created:', company.name);
+  // Load existing data instead of creating it
+  const companies = await prisma.company.findMany({ select: { id: true, name: true, default: true } });
+  const defaultCompany = companies.find(c => c.default) || null;
+  const users = await prisma.user.findMany({ where: { isActive: true }, select: { id: true, companyId: true, role: true } });
+  const TARGET_COMPANY_ID = defaultCompany?.id || users[0]?.companyId || companies[0]?.id || null;
+  const usersInTargetCompany = TARGET_COMPANY_ID ? users.filter(u => u.companyId === TARGET_COMPANY_ID) : [];
+  const contacts = await prisma.contact.findMany({ select: { id: true } });
 
-  // Create departments
-  const departments = await Promise.all([
-    prisma.department.upsert({
-      where: { id: 'dept-it' },
-      update: {},
-      create: {
-        id: 'dept-it',
-        name: 'Information Technology',
-        description: 'IT and software development department',
-        companyId: company.id,
-      },
-    }),
-    prisma.department.upsert({
-      where: { id: 'dept-hr' },
-      update: {},
-      create: {
-        id: 'dept-hr',
-        name: 'Human Resources',
-        description: 'HR and recruitment department',
-        companyId: company.id,
-      },
-    }),
-    prisma.department.upsert({
-      where: { id: 'dept-sales' },
-      update: {},
-      create: {
-        id: 'dept-sales',
-        name: 'Sales & Marketing',
-        description: 'Sales and marketing operations',
-        companyId: company.id,
-      },
-    }),
-  ]);
+  if (!TARGET_COMPANY_ID) {
+    console.log('⚠️  No target company could be determined (no default company and no users/companies found). Aborting meetings seed.');
+    return;
+  }
 
-  console.log('✅ Departments created:', departments.map(d => d.name));
+  if (users.length === 0) {
+    console.log('⚠️  Skipping meetings seed: need existing companies and users in DB.');
+    console.log(`Companies: ${companies.length}, Users: ${users.length}`);
+    return;
+  }
 
-  // Hash password for admin user
-  const hashedPassword = await bcrypt.hash('admin123', 12);
+  // Create 50 Greek meetings (calls) with past and future dates and demo stats
+  const now = new Date();
+  const greekTitles = [
+    'Συνάντηση Εκτύπωσης',
+    'Συνεργασία Ψηφιακών Εκτυπώσεων',
+    'Παραγγελία Πελάτη',
+    'Προσφορά Υπηρεσιών',
+    'Παρουσίαση Δειγμάτων',
+    'Χρονοπρογραμματισμός Παραγωγής',
+    'Συνάντηση Παραγωγής',
+    'Συντονισμός Έργου',
+    'Έλεγχος Ποιότητας',
+    'Επιβεβαίωση Τιμολογίου'
+  ];
+  const greekDescriptions = [
+    'Συζήτηση για ανάγκες ψηφιακής εκτύπωσης και επιλογές χαρτιού.',
+    'Αναλυτική παρουσίαση υπηρεσιών εκτύπωσης και ολοκληρώσεων.',
+    'Δημιουργία προσφοράς για πινακίδες, φυλλάδια και επαγγελματικές κάρτες.',
+    'Συντονισμός παραγγελίας με προθεσμία παράδοσης και ποιοτικό έλεγχο.',
+    'Δοκιμαστικές εκτυπώσεις και επιβεβαίωση χρωμάτων (color proofing).',
+    'Καθορισμός αρχείων εκτύπωσης και προδιαγραφών PDF/X.',
+    'Ανασκόπηση παραγωγικού χρόνου και σταδίων φινιρίσματος.',
+    'Έλεγχος μακετών και τεχνικών παρατηρήσεων πριν την παραγωγή.',
+    'Συζήτηση για αποστολή, συσκευασία και παράδοση.',
+    'Επιβεβαίωση τελικού κόστους και όρων πληρωμής.'
+  ];
 
-  // Create default admin user
-  const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@acme.com' },
-    update: {},
-    create: {
-      email: 'admin@acme.com',
-      password: hashedPassword,
-      firstName: 'Admin',
-      lastName: 'User',
-      role: 'Administrator',
-      companyId: company.id,
-      departmentId: departments[0].id, // IT department
-      isActive: true,
-    },
-  });
+  console.log(`🗓️  Δημιουργία 50 ελληνικών συναντήσεων για εταιρεία ${TARGET_COMPANY_ID}...`);
 
-  console.log('✅ Admin user created:', adminUser.email);
+  const allMeetingsRaw = await Promise.all(
+    Array.from({ length: 50 }).map(async (_, i) => {
+      const isPast = i < 25; // 25 παρελθόν, 25 μέλλον
+      const daysOffset = isPast ? -(25 - i) : i - 24; // διασπορά γύρω από σήμερα
+      const startTime = new Date(now.getTime() + daysOffset * 24 * 60 * 60 * 1000 + (i % 8) * 60 * 60 * 1000);
+      const endTime = new Date(startTime.getTime() + (45 + (i % 60)) * 60 * 1000); // 45-105 λεπτά
+      const title = `${greekTitles[i % greekTitles.length]} #${i + 1}`;
+      const description = greekDescriptions[i % greekDescriptions.length];
+      // pick a creator prioritizing users from the target company
+      const pool = (usersInTargetCompany.length > 0 ? usersInTargetCompany : users);
+      if (!pool || pool.length === 0) {
+        return null as any;
+      }
+      const createdBy = pool[i % pool.length]!;
+      const status = isPast ? 'ended' : 'scheduled';
+      const type = 'meeting';
 
-  // Create sample users
-  const sampleUsers = await Promise.all([
-    prisma.user.upsert({
-      where: { email: 'manager@acme.com' },
-      update: {},
-      create: {
-        email: 'manager@acme.com',
-        password: await bcrypt.hash('manager123', 12),
-        firstName: 'John',
-        lastName: 'Manager',
-        role: 'Manager',
-        companyId: company.id,
-        departmentId: departments[1].id, // HR department
-        isActive: true,
-      },
-    }),
-    prisma.user.upsert({
-      where: { email: 'user@acme.com' },
-      update: {},
-      create: {
-        email: 'user@acme.com',
-        password: await bcrypt.hash('user123', 12),
-        firstName: 'Jane',
-        lastName: 'User',
-        role: 'Employee',
-        companyId: company.id,
-        departmentId: departments[2].id, // Sales department
-        isActive: true,
-      },
-    }),
-  ]);
+      const call = await prisma.call.create({
+        data: {
+          title,
+          description,
+          startTime,
+          endTime,
+          type,
+          status,
+          password: null,
+          companyId: TARGET_COMPANY_ID,
+          createdById: createdBy.id,
+        },
+      });
 
-  console.log('✅ Sample users created:', sampleUsers.map(u => u.email));
+      // Add participants: host (creator), another user (if available), and a contact (if available)
+      const participantsToCreate: { callId: string; userId?: string; contactId?: string; role: string }[] = [
+        { callId: call.id, userId: createdBy.id, role: 'host' },
+      ];
+      const otherUser = pool.length > 1 ? pool[(i + 1) % pool.length] : undefined;
+      if (otherUser && otherUser.id && otherUser.id !== createdBy.id) {
+        participantsToCreate.push({ callId: call.id, userId: otherUser.id, role: 'participant' });
+      }
+      const contact = contacts.length > 0 ? contacts[i % contacts.length] : undefined;
+      if (contact && contact.id) {
+        participantsToCreate.push({ callId: call.id, contactId: contact.id, role: 'participant' });
+      }
 
-  // Update department managers
-  await prisma.department.update({
-    where: { id: departments[0].id },
-    data: { managerId: adminUser.id },
-  });
+      await Promise.all(participantsToCreate.map(p => prisma.participant.create({ data: p })));
 
-  await prisma.department.update({
-    where: { id: departments[1].id },
-    data: { managerId: sampleUsers[0].id },
-  });
+      // Demo stats: create a couple of events
+      await Promise.all([
+        prisma.event.create({
+          data: {
+            callId: call.id,
+            userId: createdBy.id,
+            type: isPast ? 'completed' : 'created',
+            timestamp: startTime,
+            metadata: { locale: 'el-GR' },
+          },
+        }),
+        prisma.event.create({
+          data: {
+            callId: call.id,
+            userId: createdBy.id,
+            type: 'participants_count',
+            timestamp: endTime,
+            metadata: { total: participantsToCreate.length },
+          },
+        }),
+      ]);
 
-  console.log('✅ Department managers assigned');
+      return call;
+    })
+  );
 
-  // Create sample calls
-  const sampleCalls = await Promise.all([
-    prisma.call.create({
-      data: {
-        title: 'Weekly Team Meeting',
-        description: 'Regular weekly team sync meeting',
-        startTime: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-        type: 'meeting',
-        status: 'scheduled',
-        password: 'meeting123',
-        companyId: company.id,
-        createdById: adminUser.id,
-      },
-    }),
-    prisma.call.create({
-      data: {
-        title: 'Product Demo',
-        description: 'Demo of new product features',
-        startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // Day after tomorrow
-        type: 'webinar',
-        status: 'scheduled',
-        password: 'demo456',
-        companyId: company.id,
-        createdById: sampleUsers[0].id,
-      },
-    }),
-  ]);
+  const allMeetings = allMeetingsRaw.filter((m): m is typeof allMeetingsRaw[number] => Boolean(m));
 
-  console.log('✅ Sample calls created:', sampleCalls.map(c => c.title));
+  console.log(`✅ Δημιουργήθηκαν ${allMeetings.length} συναντήσεις.`);
 
-  // Add participants to calls
-  await Promise.all([
-    prisma.participant.create({
-      data: {
-        callId: sampleCalls[0].id,
-        userId: adminUser.id,
-        role: 'host',
-      },
-    }),
-    prisma.participant.create({
-      data: {
-        callId: sampleCalls[0].id,
-        userId: sampleUsers[0].id,
-        role: 'participant',
-      },
-    }),
-    prisma.participant.create({
-      data: {
-        callId: sampleCalls[0].id,
-        userId: sampleUsers[1].id,
-        role: 'participant',
-      },
-    }),
-    prisma.participant.create({
-      data: {
-        callId: sampleCalls[1].id,
-        userId: sampleUsers[0].id,
-        role: 'host',
-      },
-    }),
-    prisma.participant.create({
-      data: {
-        callId: sampleCalls[1].id,
-        userId: adminUser.id,
-        role: 'participant',
-      },
-    }),
-  ]);
+  // Create demo recordings for a subset of past meetings
+  const greekRecordingTitles = [
+    'Ηχογράφηση Συνάντησης',
+    'Αρχειοθέτηση Βιντεοκλήσης',
+    'Demo Εγγραφή',
+    'Καταγραφή Παρουσίασης',
+    'Εγγραφή Παραγωγής'
+  ];
 
-  console.log('✅ Participants added to calls');
+  const pastMeetings = allMeetings.filter((m) => (m.status === 'ended'));
+  const recordingsToCreate = pastMeetings.slice(0, Math.min(15, pastMeetings.length));
 
-  // Create sample contacts
-  const sampleContacts = await Promise.all([
-    prisma.contact.create({
-      data: {
-        firstName: 'John',
-        lastName: 'Smith',
-        title: 'CEO',
-        profession: 'Business Executive',
-        email: 'john.smith@example.com',
-        phone: '+1-555-0101',
-        mobile: '+1-555-0102',
-        address: '123 Business Ave',
-        city: 'New York',
-        zip: '10001',
-        country: 'USA',
-      },
-    }),
-    prisma.contact.create({
-      data: {
-        firstName: 'Sarah',
-        lastName: 'Johnson',
-        title: 'Marketing Director',
-        profession: 'Marketing Professional',
-        email: 'sarah.johnson@example.com',
-        phone: '+1-555-0201',
-        mobile: '+1-555-0202',
-        address: '456 Marketing St',
-        city: 'Los Angeles',
-        zip: '90210',
-        country: 'USA',
-      },
-    }),
-    prisma.contact.create({
-      data: {
-        firstName: 'Michael',
-        lastName: 'Brown',
-        title: 'Software Engineer',
-        profession: 'Software Developer',
-        email: 'michael.brown@example.com',
-        phone: '+1-555-0301',
-        mobile: '+1-555-0302',
-        address: '789 Tech Blvd',
-        city: 'San Francisco',
-        zip: '94102',
-        country: 'USA',
-      },
-    }),
-  ]);
+  await Promise.all(
+    recordingsToCreate.map((call, idx) =>
+      prisma.recording.create({
+        data: {
+          callId: call.id,
+          title: `${greekRecordingTitles[idx % greekRecordingTitles.length]} #${idx + 1}`,
+          description: 'Δοκιμαστική εγγραφή για επίδειξη (χωρίς πραγματικό αρχείο).',
+          url: null,
+          bunnyCdnUrl: 'https://demo.invalid/recording.mp4', // placeholder χωρίς πραγματικό link
+          duration: 30 * 60 + (idx % 15) * 60, // 30-44 λεπτά
+          fileSize: 150 * 1024 * 1024 + (idx % 50) * 1024 * 1024, // ~150-200 MB
+          status: 'completed',
+        },
+      })
+    )
+  );
 
-  console.log('✅ Sample contacts created:', sampleContacts.map(c => `${c.firstName} ${c.lastName}`));
-
-  // Associate some contacts with companies
-  await Promise.all([
-    prisma.contactCompany.create({
-      data: {
-        contactId: sampleContacts[0].id,
-        companyId: company.id,
-      },
-    }),
-    prisma.contactCompany.create({
-      data: {
-        contactId: sampleContacts[1].id,
-        companyId: company.id,
-      },
-    }),
-  ]);
-
-  console.log('✅ Contact-company associations created');
+  console.log('✅ Demo recordings created:', recordingsToCreate.length);
 
   console.log('🎉 Database seeding completed successfully!');
   console.log('\n📋 Default credentials:');

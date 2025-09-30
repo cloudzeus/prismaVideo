@@ -10,23 +10,23 @@ import { PerformanceMonitor } from '@/components/ui/performance-monitor';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Video Conference Manager',
-  description: 'Modern video conference management platform with WebRTC',
-  keywords: ['video conference', 'meeting', 'webrtc', 'prisma', 'next.js'],
-  authors: [{ name: 'Video Conference Manager' }],
-  creator: 'Video Conference Manager',
+  title: 'Communication Manager - Video Conference Platform',
+  description: 'Modern video conference management platform with WebRTC powered by Communication Manager',
+  keywords: ['video conference', 'meeting', 'webrtc', 'prisma', 'next.js', 'communication-manager'],
+  authors: [{ name: 'Communication Manager' }],
+  creator: 'Communication Manager',
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://video-conference-manager.com',
-    title: 'Video Conference Manager',
-    description: 'Modern video conference management platform',
-    siteName: 'Video Conference Manager',
+    url: 'https://communication-manager.com',
+    title: 'Communication Manager - Video Conference Platform',
+    description: 'Modern video conference management platform powered by Communication Manager',
+    siteName: 'Communication Manager',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Video Conference Manager',
-    description: 'Modern video conference management platform',
+    title: 'Communication Manager - Video Conference Platform',
+    description: 'Modern video conference management platform powered by Communication Manager',
   },
   robots: {
     index: true,

@@ -201,14 +201,11 @@ export function CompaniesTable({ companies, isAdmin, pagination, searchParams }:
     };
   }, [searchTerm, searchParams?.search]); // Removed router and toast from dependencies
 
-  // Effect to sync searchTerm with URL params when they change
+  // Effect to sync searchTerm with URL params when they change (avoid overriding user typing)
   useEffect(() => {
     const currentSearchParam = searchParams?.search || '';
-    if (searchTerm !== currentSearchParam) {
-      console.log('Syncing searchTerm with URL params:', { searchTerm, currentSearchParam });
-      setSearchTerm(currentSearchParam);
-    }
-  }, [searchParams?.search, searchTerm]);
+    setSearchTerm(currentSearchParam);
+  }, [searchParams?.search]);
 
   // Cleanup effect
   useEffect(() => {

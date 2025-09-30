@@ -89,8 +89,12 @@ export function Navigation({ user }: NavigationProps) {
             {/* Logo */}
             <div className="flex-shrink-0">
               <Link href="/" className="flex items-center space-x-2">
-                <Video className="h-8 w-8 text-primary" />
-                <span className="text-xl font-bold">VideoPrisma</span>
+                <img 
+                  src="https://videoConf.b-cdn.net/videoNamager.svg" 
+                  alt="Communication Manager Logo" 
+                  className="w-auto pt-2"
+                  style={{ height: '48px' }}
+                />
               </Link>
             </div>
 
@@ -155,6 +159,12 @@ export function Navigation({ user }: NavigationProps) {
                     </p>
                   </div>
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/license" className="flex items-center">
+                    License
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/profile" className="flex items-center">
