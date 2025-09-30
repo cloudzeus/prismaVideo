@@ -91,6 +91,16 @@ The Dockerfile uses a multi-stage build:
 2. **Builder Stage:** Generates Prisma client and builds Next.js app
 3. **Runner Stage:** Creates minimal production image with standalone output
 
+### Cache Cleanup and App Router 404
+
+- Clear Next.js cache before build to avoid stale artifacts:
+
+  ```bash
+  rm -rf .next
+  ```
+
+- Ensure no legacy `pages/404.tsx` or `pages/_document.(js|tsx)` are present. This project uses the App Router with `src/app/not-found.tsx`.
+
 ## Health Checks
 
 The application includes a health check endpoint at `/api/health` that returns:
